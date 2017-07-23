@@ -1,0 +1,6 @@
+[submodule "lwip"]
+	path = lwip
+	url = git@github.com:FlowerWrong/lwip.git
+[submodule "sds"]
+	path = sds
+	url = git@github.com:antirez/sds.git
