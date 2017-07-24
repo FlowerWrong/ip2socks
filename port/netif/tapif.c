@@ -37,24 +37,11 @@
 #include <string.h>
 #include <sys/ioctl.h>
 #include <sys/socket.h>
-#include <sys/types.h>
-#include <sys/time.h>
-#include <sys/uio.h>
-#include <sys/socket.h>
 
 #include "lwip/opt.h"
-
-#include "lwip/debug.h"
-#include "lwip/def.h"
 #include "lwip/ip.h"
-#include "lwip/mem.h"
-#include "lwip/stats.h"
 #include "lwip/snmp.h"
-#include "lwip/pbuf.h"
-#include "lwip/sys.h"
-#include "lwip/timeouts.h"
 #include "netif/etharp.h"
-#include "lwip/ethip6.h"
 
 #if defined(LWIP_DEBUG) && defined(LWIP_TCPDUMP)
 #include "netif/tcpdump.h"
@@ -65,7 +52,6 @@
 #define IFCONFIG_BIN "/sbin/ifconfig "
 
 #if defined(LWIP_UNIX_LINUX)
-#include <sys/ioctl.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
 /*
