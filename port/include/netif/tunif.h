@@ -33,7 +33,6 @@
 #define LWIP_TUNIF_H
 
 #include "lwip/netif.h"
-
 #include "lwip/pbuf.h"
 
 err_t tunif_init(struct netif *netif);

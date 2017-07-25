@@ -67,7 +67,7 @@
  *    4 byte alignment -> #define MEM_ALIGNMENT 4
  *    2 byte alignment -> #define MEM_ALIGNMENT 2
  */
-#define MEM_ALIGNMENT                   4
+#define MEM_ALIGNMENT                   1
 
 /**
  * MEM_SIZE: the size of the heap memory. If the application will send
@@ -400,14 +400,13 @@
  * LWIP_STATS==1: Enable statistics collection in lwip_stats.
  */
 #define LWIP_STATS                      1
+#define MEM_STATS                       1
 
 /*
    ---------------------------------------
    ---------- Debugging options ----------
    ---------------------------------------
 */
-
-#define LWIP_DEBUG       1
 
 #define TAPIF_DEBUG      LWIP_DBG_ON
 #define TUNIF_DEBUG      LWIP_DBG_OFF

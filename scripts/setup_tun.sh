@@ -15,12 +15,12 @@ start_fwd() {
     ip route add "$SOCKS_SERVER" via "$GATEWAY_IP"
 
     # DNS
-    ip route add "114.114.114.114" via "$GATEWAY_IP"
+    # ip route add "114.114.114.114" via "$GATEWAY_IP"
 
     # 国内网段走家用网关（路由器）的 IP 地址
-#    for i in $(cat '/home/yy/dev/ruby/yyrp/examples/badvpn/china_ip_list/china_ip_list.txt'); do
-#        ip route add "$i" via "$GATEWAY_IP"
-#    done
+    for i in $(cat '/home/yy/dev/ruby/yyrp/examples/badvpn/china_ip_list/china_ip_list.txt'); do
+        ip route add "$i" via "$GATEWAY_IP"
+    done
 
     # 将默认网关设为虚拟网卡的IP地址
     ip route add 0.0.0.0/1 via "$TUN_NETWORK_PREFIX.1"

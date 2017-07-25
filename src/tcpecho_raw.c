@@ -45,9 +45,9 @@ static void tcpecho_raw_send(struct tcp_pcb *tpcb, struct tcpecho_raw_state *es)
 
 static void
 tcpecho_raw_free(struct tcpecho_raw_state *es) {
-  es->pcb = NULL;
-
-  mem_free(es);
+  if (es != NULL) {
+    mem_free(es);
+  }
 }
 
 static void
