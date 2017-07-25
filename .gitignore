@@ -17,6 +17,7 @@ build/
 *.log
 
 vgcore*
+ip2socks.dSYM/
 
 # main app
 ip2socks
