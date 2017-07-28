@@ -73,7 +73,7 @@ struct tuntapif {
  * 1 tun
  * 2 tap
  */
-#define TUNTAP 1
+#define TUNTAP 2
 
 int
 main(int argc, char **argv) {

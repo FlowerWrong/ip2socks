@@ -44,6 +44,11 @@
  *
  */
 
+#include <netinet/in.h>
+#include <arpa/inet.h>
+#include <memory.h>
+#include <error.h>
+#include <time.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 
@@ -52,6 +57,53 @@
 #if LWIP_UDP
 
 static struct udp_pcb *udpecho_raw_pcb;
+
+typedef struct {
+    char *buffer;
+    int length;
+} response;
+
+int SOCKS_PORT = 1080;
+char *SOCKS_ADDR = {"127.0.0.1"};
+
+void tcp_dns_query(void *query, response *buffer, int len) {
+  int sock;
+  struct sockaddr_in socks_server;
+  char tmp[1024];
+
+  memset(&socks_server, 0, sizeof(socks_server));
+  socks_server.sin_family = AF_INET;
+  socks_server.sin_port = htons(SOCKS_PORT);
+  socks_server.sin_addr.s_addr = inet_addr(SOCKS_ADDR);
+
+  sock = socket(AF_INET, SOCK_STREAM, 0);
+  if (sock < 0)
+    printf("[!] Error creating TCP socket");
+
+  if (connect(sock, (struct sockaddr *) &socks_server, sizeof(socks_server)) < 0)
+    printf("[!] Error connecting to proxy");
+
+  // socks handshake
+  send(sock, "\x05\x01\x00", 3, 0);
+  recv(sock, tmp, 1024, 0);
+
+  srand(time(NULL));
+
+  // select random dns server
+  in_addr_t remote_dns = inet_addr("8.8.8.8");
+  memcpy(tmp, "\x05\x01\x00\x01", 4);
+  memcpy(tmp + 4, &remote_dns, 4);
+  memcpy(tmp + 8, "\x00\x35", 2);
+
+  printf("Using DNS server: %s\n", inet_ntoa(*(struct in_addr *) &remote_dns));
+
+  send(sock, tmp, 10, 0);
+  recv(sock, tmp, 1024, 0);
+
+  // forward dns query
+  send(sock, query, len, 0);
+  buffer->length = recv(sock, buffer->buffer, 2048, 0);
+}
 
 /**
  * receive callback for a UDP PCB
@@ -62,9 +114,43 @@ udpecho_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
                  const ip_addr_t *addr, u16_t port) {
   LWIP_UNUSED_ARG(arg);
   if (p != NULL) {
-    /* send received packet back to sender */
-    udp_sendto(upcb, p, addr, port);
-    /* free the pbuf */
+    char localip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(upcb->local_ip), localip_str, INET_ADDRSTRLEN);
+    char remoteip_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, &(upcb->remote_ip), remoteip_str, INET_ADDRSTRLEN);
+
+    // flow 119.23.211.95:80 <-> 172.16.0.1:53536
+    printf("<======== udp flow %s:%d <-> %s:%d\n", localip_str, upcb->local_port, remoteip_str, upcb->remote_port);
+    inet_ntop(AF_INET, &addr, localip_str, INET_ADDRSTRLEN);
+    printf("<======== addr:port %s:%d\n", localip_str, port);
+
+
+    response *buffer = (response *) malloc(sizeof(response));
+    buffer->buffer = malloc(2048);
+    char *query;
+
+    pbuf_copy_partial(p, buffer->buffer, p->tot_len, 0);
+
+    query = malloc(p->len + 3);
+    query[0] = 0;
+    query[1] = (char) p->len;
+    memcpy(query + 2, buffer->buffer, p->len);
+
+    // forward the packet to the tcp dns server
+    tcp_dns_query(query, buffer, p->len + 2);
+
+    if (buffer->length > 0) {
+      /* send received packet back to sender */
+      struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length - 2, PBUF_RAM);
+      memcpy(socksp->payload, buffer->buffer + 2, (size_t) buffer->length - 2);
+      udp_sendto(upcb, socksp, addr, port);
+      /* free the pbuf */
+      pbuf_free(socksp);
+    }
+
+    free(buffer->buffer);
+    free(buffer);
+    free(query);
     pbuf_free(p);
   }
 }
@@ -77,7 +163,7 @@ udpecho_raw_init(void) {
     err_t err;
 
     /* lwip/src/core/udp.c add udp_pcb to udp_pcbs */
-    err = udp_bind(udpecho_raw_pcb, IP_ANY_TYPE, 7);
+    err = udp_bind(udpecho_raw_pcb, IP_ANY_TYPE, 53);
     if (err == ERR_OK) {
       /**
        * lwip/src/core/udp.c

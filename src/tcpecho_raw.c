@@ -298,7 +298,7 @@ tcpecho_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
   inet_ntop(AF_INET, &(newpcb->remote_ip), remoteip_str, INET_ADDRSTRLEN);
 
   // flow 119.23.211.95:80 <-> 172.16.0.1:53536
-  printf("<--------------------- flow %s:%d <-> %s:%d\n", localip_str, newpcb->local_port, remoteip_str,
+  printf("<--------------------- tcp flow %s:%d <-> %s:%d\n", localip_str, newpcb->local_port, remoteip_str,
          newpcb->remote_port);
 
   /**
