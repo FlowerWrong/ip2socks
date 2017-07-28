@@ -13,15 +13,17 @@
 #include "lwip/ip4_frag.h"
 
 #if defined(LWIP_UNIX_LINUX)
+
 #include "netif/tapif.h"
+
 #endif
 
 #include "netif/tunif.h"
 
 #include "netif/etharp.h"
 
-#include "udpecho_raw.h"
-#include "tcpecho_raw.h"
+#include "udp_raw.h"
+#include "tcp_raw.h"
 
 /* (manual) host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
@@ -98,7 +100,6 @@ main(int argc, char **argv) {
       case 'h':
         usage();
             exit(0);
-            break;
       case 'g':
         ip4addr_aton(optarg, &gw);
             break;
@@ -126,8 +127,6 @@ main(int argc, char **argv) {
 
   /* lwip/src/core/init.c */
   lwip_init();
-
-  printf("TCP/IP initialized.\n");
 
   sds sds_str = sdsnew("sds worked");
   printf("%s\n", sds_str);
@@ -160,8 +159,8 @@ main(int argc, char **argv) {
   netif_create_ip6_linklocal_address(&netif, 1);
 #endif
 
-  udpecho_raw_init();
-  tcpecho_raw_init();
+  udp_raw_init();
+  tcp_raw_init();
 
   printf("Applications started.\n");
 

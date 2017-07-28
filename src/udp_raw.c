@@ -1,49 +1,6 @@
-/*
- * Copyright (c) 2016 Stephan Linz <linz@li-pro.net>, Li-Pro.Net
- * All rights reserved.
- *
- * Based on examples provided by
- * Iwan Budi Kusnanto <ibk@labhijau.net> (https://gist.github.com/iwanbk/1399729)
- * Juri Haberland <juri@sapienti-sat.org> (https://lists.gnu.org/archive/html/lwip-users/2007-06/msg00078.html)
- *
- * Redistribution and use in source and binary forms, with or without modification,
- * are permitted provided that the following conditions are met:
- *
- * 1. Redistributions of source code must retain the above copyright notice,
- *    this list of conditions and the following disclaimer.
- * 2. Redistributions in binary form must reproduce the above copyright notice,
- *    this list of conditions and the following disclaimer in the documentation
- *    and/or other materials provided with the distribution.
- * 3. The name of the author may not be used to endorse or promote products
- *    derived from this software without specific prior written permission.
- *
- * THIS SOFTWARE IS PROVIDED BY THE AUTHOR ``AS IS'' AND ANY EXPRESS OR IMPLIED
- * WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED WARRANTIES OF
- * MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE ARE DISCLAIMED. IN NO EVENT
- * SHALL THE AUTHOR BE LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL,
- * EXEMPLARY, OR CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT
- * OF SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
- * INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
- * CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE) ARISING
- * IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY
- * OF SUCH DAMAGE.
- *
- * This file is part of and a contribution to the lwIP TCP/IP stack.
- *
- * Credits go to Adam Dunkels (and the current maintainers) of this software.
- *
- * Stephan Linz rewrote this file to get a basic echo example.
- */
-
 /**
- * @file
- * UDP echo server example using raw API.
- *
- * Echos all bytes sent by connecting client,
- * and passively closes when client is done.
- *
+ * based on lwip-contrib
  */
-
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <memory.h>
@@ -52,11 +9,11 @@
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 
-#include "udpecho_raw.h"
+#include "udp_raw.h"
 
 #if LWIP_UDP
 
-static struct udp_pcb *udpecho_raw_pcb;
+static struct udp_pcb *udp_raw_pcb;
 
 typedef struct {
     char *buffer;
@@ -110,8 +67,8 @@ void tcp_dns_query(void *query, response *buffer, int len) {
  * pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src_port)
  */
 static void
-udpecho_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
-                 const ip_addr_t *addr, u16_t port) {
+udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
+             const ip_addr_t *addr, u16_t port) {
   LWIP_UNUSED_ARG(arg);
   if (p != NULL) {
     char localip_str[INET_ADDRSTRLEN];
@@ -158,17 +115,17 @@ udpecho_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 }
 
 void
-udpecho_raw_init(void) {
+udp_raw_init(void) {
   /* call udp_new */
-  udpecho_raw_pcb = udp_new_ip_type(IPADDR_TYPE_ANY);
-  if (udpecho_raw_pcb != NULL) {
+  udp_raw_pcb = udp_new_ip_type(IPADDR_TYPE_ANY);
+  if (udp_raw_pcb != NULL) {
     err_t err;
 
     /* lwip/src/core/udp.c add udp_pcb to udp_pcbs */
     ip4_addr_t ipaddr;
     IP4_ADDR(&ipaddr, 10, 0, 0, 2);
-    err = udp_bind(udpecho_raw_pcb, &ipaddr, 53);
-//    err = udp_bind(udpecho_raw_pcb, IP_ANY_TYPE, 53);
+    err = udp_bind(udp_raw_pcb, &ipaddr, 53);
+//    err = udp_bind(udp_raw_pcb, IP_ANY_TYPE, 53);
     if (err == ERR_OK) {
       /**
        * lwip/src/core/udp.c
@@ -181,7 +138,7 @@ udpecho_raw_init(void) {
        * @param recv function pointer of the callback function
        * @param recv_arg additional argument to pass to the callback function
        */
-      udp_recv(udpecho_raw_pcb, udpecho_raw_recv, NULL);
+      udp_recv(udp_raw_pcb, udp_raw_recv, NULL);
     } else {
       /* abort? output diagnostic? */
     }

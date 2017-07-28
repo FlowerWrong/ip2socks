@@ -34,8 +34,8 @@ set(MAIN_SOURCE_FILES
     ${LIBEVDIR}/ev.c
 
     src/socks5.c
-    src/tcpecho_raw.c
-    src/udpecho_raw.c
+    src/tcp_raw.c
+    src/udp_raw.c
     src/main.c
     )
 
