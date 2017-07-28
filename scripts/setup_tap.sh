@@ -6,7 +6,7 @@ SOCKS_PORT=1080 # 本地SOCKS 服务器的端口
 # $(ip route | awk '/default/ { print $3 }')
 GATEWAY_IP=$2 # 家用网关（路由器）的 IP 地址
 TUN_NETWORK_DEV=tap0
-TUN_NETWORK_PREFIX=172.16.0 # 选一个不冲突的内网 IP 段的前缀
+TUN_NETWORK_PREFIX=10.0.0 # 选一个不冲突的内网 IP 段的前缀
 
 CHINA_IP=$3
 
