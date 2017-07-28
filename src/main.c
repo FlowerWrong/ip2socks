@@ -179,7 +179,7 @@ main(int argc, char **argv) {
   ev_io_start(loop, tuntap_io);
 
   // TODO
-  // sys_check_timeouts();
+  sys_check_timeouts();
 
   return ev_run(loop, 0);
 }

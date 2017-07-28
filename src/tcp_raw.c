@@ -345,7 +345,7 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
     tcp_arg(newpcb, es);
     tcp_recv(newpcb, tcp_raw_recv);
     tcp_err(newpcb, tcp_raw_error);
-    tcp_poll(newpcb, tcp_raw_poll, 0);
+    tcp_poll(newpcb, tcp_raw_poll, 4);
     tcp_sent(newpcb, tcp_raw_sent);
     ret_err = ERR_OK;
   } else {
