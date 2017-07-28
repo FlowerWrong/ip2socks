@@ -444,6 +444,7 @@
 #define LWIP_HOOK_IP4_NETIF(iphdr) netif_list
 #define LWIP_HOOK_IP6_NETIF(ip6hdr) netif_list
 #define LWIP_HOOK_TCP_LISTEN_PCB(tcphdr) tcp_listen_pcbs.listen_pcbs
+#define LWIP_HOOK_UDP_LISTEN_PCB 1
 /* hook config end */
 
 

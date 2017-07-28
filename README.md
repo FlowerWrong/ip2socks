@@ -14,6 +14,8 @@ vagrant up --provider virtualbox
 vagrant ssh
 ```
 
+* `use-vc` in `/etc/resolv.conf`: Sets RES_USEVC in _res.options.  This option forces the use of TCP for DNS resolutions.
+
 ## Library
 
 * [antirez/sds](https://github.com/antirez/sds)

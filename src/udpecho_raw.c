@@ -121,8 +121,9 @@ udpecho_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     // flow 119.23.211.95:80 <-> 172.16.0.1:53536
     printf("<======== udp flow %s:%d <-> %s:%d\n", localip_str, upcb->local_port, remoteip_str, upcb->remote_port);
-    inet_ntop(AF_INET, &addr, localip_str, INET_ADDRSTRLEN);
-    printf("<======== addr:port %s:%d\n", localip_str, port);
+    char addr_str[INET_ADDRSTRLEN];
+    inet_ntop(AF_INET, addr, addr_str, INET_ADDRSTRLEN);
+    printf("<======== addr:port %s:%d\n", addr_str, port);
 
 
     response *buffer = (response *) malloc(sizeof(response));
@@ -143,6 +144,7 @@ udpecho_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       /* send received packet back to sender */
       struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length - 2, PBUF_RAM);
       memcpy(socksp->payload, buffer->buffer + 2, (size_t) buffer->length - 2);
+
       udp_sendto(upcb, socksp, addr, port);
       /* free the pbuf */
       pbuf_free(socksp);
@@ -163,7 +165,10 @@ udpecho_raw_init(void) {
     err_t err;
 
     /* lwip/src/core/udp.c add udp_pcb to udp_pcbs */
-    err = udp_bind(udpecho_raw_pcb, IP_ANY_TYPE, 53);
+    ip4_addr_t ipaddr;
+    IP4_ADDR(&ipaddr, 10, 0, 0, 2);
+    err = udp_bind(udpecho_raw_pcb, &ipaddr, 53);
+//    err = udp_bind(udpecho_raw_pcb, IP_ANY_TYPE, 53);
     if (err == ERR_OK) {
       /**
        * lwip/src/core/udp.c
