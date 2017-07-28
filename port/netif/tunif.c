@@ -309,22 +309,6 @@ low_level_input(struct tunif *tunif) {
     return NULL;
   }
 
-  uint8_t ip_version = 0;
-  ip_version = (((uint8_t *) buf)[0] >> 4);
-  switch (ip_version) {
-    case 4: {
-      printf("<---------------------------------- packet is ipv4\n");
-    }
-          break;
-    case 6: {
-      printf("<---------------------------------- packet is ipv6\n");
-    }
-          break;
-    default:
-      printf("<---------------------------------- bad version number\n");
-          return NULL;
-  }
-
   /* We allocate a pbuf chain of pbufs from the pool. */
   p = pbuf_alloc(PBUF_LINK, (u16_t) len, PBUF_POOL);
 

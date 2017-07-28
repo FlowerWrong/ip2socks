@@ -30,11 +30,3 @@ check_function_exists(nanosleep HAVE_NANOSLEEP)
 
 
 configure_file(${LIBEVDIR}/config.h.cmake ${LIBEVDIR}/config.h)
-
-add_library(ev ${LIBEVDIR}/ev.c)
-
-target_link_libraries(ev m)
-
-if (UNIX AND NOT APPLE)
-    target_link_libraries(ev rt)
-endif ()

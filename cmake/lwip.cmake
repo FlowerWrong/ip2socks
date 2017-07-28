@@ -166,15 +166,3 @@ set(LWIP_SOURCE_FILES
     ${LWIPARCH}/perf.c
     ${LWIPARCH}/sys_arch.c
     )
-
-
-# add_library(lwip ${LWIP_SOURCE_FILES})
-
-#find_library(UTIL_LIB NAMES util)
-#target_link_libraries(lwip ${UTIL_LIB})
-#target_link_libraries(lwip pthread)
-#
-#if (UNIX AND NOT APPLE)
-#    target_link_libraries(lwip rt)
-#endif ()
-

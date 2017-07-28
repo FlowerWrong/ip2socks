@@ -31,6 +31,8 @@ set(MAIN_SOURCE_FILES
     # patch files
     ${LWIPARCH}/netif/tunif.c
 
+    ${LIBEVDIR}/ev.c
+
     src/socks5.c
     src/tcpecho_raw.c
     src/udpecho_raw.c
@@ -48,4 +50,3 @@ if (UNIX AND NOT APPLE)
 endif ()
 
 add_executable(ip2socks ${MAIN_SOURCE_FILES})
-TARGET_LINK_LIBRARIES(ip2socks ev)

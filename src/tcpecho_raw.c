@@ -90,7 +90,8 @@ tcpecho_raw_send(struct tcp_pcb *tpcb, struct tcpecho_raw_state *es) {
       /* we can read more data now */
       tcp_recved(tpcb, plen);
     } else {
-      printf("<-------------------------------------- send to local failed %ld\n", ret);
+      printf("<-------------------------------------- send to socks failed %ld\n", ret);
+      tcpecho_raw_close(tpcb, es);
     }
   }
 }
@@ -270,6 +271,7 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   } else {
     // TODO
     printf("<--------------------- ========== nreads %ld > tcp_sndbuf(pcb) %d\n", nreads, tcp_sndbuf(pcb));
+    free_all(loop, watcher, es, pcb);
   }
   return;
 }
