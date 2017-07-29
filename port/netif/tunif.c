@@ -2,6 +2,7 @@
  * based on lwip-contrib
  */
 #include "netif/tunif.h"
+#include "netif/socket_util.h"
 
 #include <string.h>
 #include <unistd.h>
@@ -217,6 +218,8 @@ low_level_init(struct netif *netif) {
     perror("tunif_init failed\n");
     exit(1);
   }
+
+  setnonblocking(tunif->fd);
 }
 /*-----------------------------------------------------------------------------------*/
 /*

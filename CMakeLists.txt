@@ -28,6 +28,7 @@ set(MAIN_SOURCE_FILES
 
     # patch files
     ${LWIPARCH}/netif/tunif.c
+    ${LWIPARCH}/netif/socket_util.c
 
     ${LIBEVDIR}/ev.c
 

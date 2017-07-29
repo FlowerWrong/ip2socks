@@ -1,6 +1,7 @@
 //
 // Created by yy on 17-7-7.
 //
+#include <fcntl.h>
 #include "socks5.h"
 
 int32_t socks5_sockset(int sockfd) {
@@ -39,6 +40,7 @@ int socks5_connect(const char *proxy_host, const char *proxy_port) {
     printf("socket failed\n");
     return -1;
   }
+  // setnonblocking(socks_fd);
   socks5_sockset(socks_fd);
   if (0 > connect(socks_fd, (struct sockaddr *) &socks_proxy_addr, sizeof(socks_proxy_addr))) {
     printf("connect failed\n");

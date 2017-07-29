@@ -19,6 +19,7 @@
 #endif /* LWIP_DEBUG && LWIP_TCPDUMP */
 
 #include "netif/tapif.h"
+#include "netif/socket_util.h"
 
 #define IFCONFIG_BIN "/sbin/ifconfig "
 
@@ -103,6 +104,8 @@ low_level_init(struct netif *netif) {
 #endif /* LWIP_UNIX_LINUX */
     exit(1);
   }
+
+  setnonblocking(tapif->fd);
 
 #ifdef LWIP_UNIX_LINUX
   {
