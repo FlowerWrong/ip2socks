@@ -1,9 +1,6 @@
 [submodule "lwip"]
 	path = lwip
 	url = git@github.com:FlowerWrong/lwip.git
-[submodule "sds"]
-	path = sds
-	url = git@github.com:antirez/sds.git
 [submodule "scripts/china_ip_list"]
 	path = scripts/china_ip_list
 	url = git@github.com:17mon/china_ip_list.git
