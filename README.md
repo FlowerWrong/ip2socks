@@ -20,6 +20,17 @@ vagrant ssh
 
 * [antirez/sds](https://github.com/antirez/sds)
 
+## Remove submodule
+
+```
+Run git rm --cached <submodule name>
+Delete the relevant lines from the .gitmodules file.
+Delete the relevant section from .git/config.
+Commit
+Delete the now untracked submodule files.
+Remove directory .git/modules/<submodule name>
+```
+
 ## References
 
 * [ANDROID: BADVPN中使用的LWIP的版本及TUN2SOCKS工作原理](https://www.brobwind.com/archives/1401)
