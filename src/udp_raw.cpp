@@ -4,7 +4,6 @@
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <memory.h>
-#include <error.h>
 #include <time.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
