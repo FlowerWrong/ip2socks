@@ -70,7 +70,6 @@ tcp_raw_close(struct tcp_pcb *tpcb, struct tcp_raw_state *es) {
     es->socks_buf_used = 0;
     es->buf_used = 0;
     if (es->socks_fd > 0) {
-      printf("<---------------------------------- ev io fd %d to be close\n", es->socks_fd);
       if (&(es->io) != NULL) {
         ev_io_stop(EV_DEFAULT, &(es->io));
         close(es->socks_fd);
@@ -111,7 +110,7 @@ tcp_raw_error(void *arg, err_t err) {
   es = (struct tcp_raw_state *) arg;
 
   if (es != NULL) {
-    printf("tcp_raw_error is %s\n", lwip_strerr(err));
+    printf("tcp_raw_error is %d %s\n", err, lwip_strerr(err));
     if (es->pcb != NULL) {
       tcp_raw_close(es->pcb, es);
     } else {
@@ -169,6 +168,9 @@ tcp_raw_sent(void *arg, struct tcp_pcb *tpcb, u16_t len) {
 
 static err_t
 tcp_raw_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
+  if (arg == NULL) {
+    return ERR_ARG;
+  }
   struct tcp_raw_state *es;
   err_t ret_err;
 
@@ -308,7 +310,10 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   std::string buf_cpp(buffer, nreads);
   es->socks_buf.append(buf_cpp);
   es->socks_buf_used += nreads;
-  std::cout << "recv " << nreads << " data, " << "es->socks_buf_used is " << es->socks_buf_used << std::endl;
+
+  if (es->socks_buf_used > nreads) {
+    std::cout << "recv " << nreads << " data, " << "es->socks_buf_used is " << es->socks_buf_used << std::endl;
+  }
 
   write_and_output(pcb, es);
   return;
@@ -338,8 +343,7 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
   inet_ntop(AF_INET, &(newpcb->remote_ip), remoteip_str, INET_ADDRSTRLEN);
 
   // flow 119.23.211.95:80 <-> 172.16.0.1:53536
-  printf("<--------------------- tcp flow %s:%d <-> %s:%d\n", localip_str, newpcb->local_port, remoteip_str,
-         newpcb->remote_port);
+  // printf("<--------------------- tcp flow %s:%d <-> %s:%d\n", localip_str, newpcb->local_port, remoteip_str, newpcb->remote_port);
 
   /**
    * socks 5
@@ -361,7 +365,6 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
     printf("socks5 auth error\n");
     return -1;
   }
-  printf("socks 5 auth success fd is %d\n", socks_fd);
 
   es = (struct tcp_raw_state *) malloc(sizeof(struct tcp_raw_state));
   memset(es, 0, sizeof(struct tcp_raw_state));

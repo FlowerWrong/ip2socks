@@ -214,7 +214,7 @@ low_level_init(struct netif *netif) {
   tunif->fd = tun_create(tun_name);
   printf("tunif_init: fd %d %s\n", tunif->fd, tun_name);
   if (tunif->fd < 1) {
-    perror("tunif_init");
+    perror("tunif_init failed\n");
     exit(1);
   }
 }
@@ -246,9 +246,7 @@ low_level_output(struct tunif *tunif, struct pbuf *p) {
   ret = write(tunif->fd, buf, p->tot_len);
 #endif
   if (ret == -1) {
-    perror("tunif: write");
-  } else {
-    printf("write to tun %d %d bytes success\n", tunif->fd, p->tot_len);
+    perror("tunif: write failed\n");
   }
   return ERR_OK;
 }
@@ -275,7 +273,6 @@ low_level_input(struct tunif *tunif) {
 #if defined(LWIP_UNIX_LINUX)
   len = read(tunif->fd, buf, sizeof(buf));
 #endif
-  printf("<---------------------------------- read from tun %ld bytes\n", len);
   if ((len <= 0) || (len > 0xffff)) {
     return NULL;
   }
@@ -343,7 +340,7 @@ tunif_input(struct netif *netif) {
 
   err_t err = netif->input(p, netif);
   if (err != ERR_OK) {
-    printf("============================> tapif_input: netif input error %d\n", err);
+    printf("============================> tapif_input: netif input error %s\n", lwip_strerr(err));
     pbuf_free(p);
   }
 }

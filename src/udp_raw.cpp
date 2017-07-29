@@ -51,8 +51,6 @@ void tcp_dns_query(void *query, response *buffer, int len) {
   memcpy(tmp + 4, &remote_dns, 4);
   memcpy(tmp + 8, "\x00\x35", 2);
 
-  printf("Using DNS server: %s\n", inet_ntoa(*(struct in_addr *) &remote_dns));
-
   send(sock, tmp, 10, 0);
   recv(sock, tmp, 1024, 0);
 
@@ -70,18 +68,6 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
              const ip_addr_t *addr, u16_t port) {
   LWIP_UNUSED_ARG(arg);
   if (p != NULL) {
-    char localip_str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(upcb->local_ip), localip_str, INET_ADDRSTRLEN);
-    char remoteip_str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, &(upcb->remote_ip), remoteip_str, INET_ADDRSTRLEN);
-
-    // flow 119.23.211.95:80 <-> 172.16.0.1:53536
-    printf("<======== udp flow %s:%d <-> %s:%d\n", localip_str, upcb->local_port, remoteip_str, upcb->remote_port);
-    char addr_str[INET_ADDRSTRLEN];
-    inet_ntop(AF_INET, addr, addr_str, INET_ADDRSTRLEN);
-    printf("<======== addr:port %s:%d\n", addr_str, port);
-
-
     response *buffer = (response *) malloc(sizeof(response));
     buffer->buffer = static_cast<char *>(malloc(2048));
     char *query;
