@@ -251,22 +251,29 @@ static void send_data_lwip(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
         len = es->socks_buf_used;
       }
 
-      do {
-        err = tcp_write(pcb, es->socks_buf.c_str(), len, TCP_WRITE_FLAG_COPY);
-        if (err == ERR_MEM) {
-          len /= 2;
-        }
-      } while (err == ERR_MEM && len > 1);
+      if (len > 0) {
+        do {
+          err = tcp_write(pcb, es->socks_buf.c_str(), len, TCP_WRITE_FLAG_COPY);
+          if (err == ERR_MEM) {
+            len /= 2;
+          }
+        } while (err == ERR_MEM && len > 1);
 
-      if (err == ERR_OK) {
-        if (es->socks_buf.size() == len) {
-          es->socks_buf.clear();
+        if (err == ERR_OK) {
+          if (es->socks_buf.size() == len) {
+            es->socks_buf.clear();
+          } else {
+            es->socks_buf.erase(es->socks_buf.begin(), es->socks_buf.end() - (es->socks_buf.size() - len));
+          }
+          es->socks_buf_used -= len;
+
+          err_t wr_err = tcp_output(pcb);
+          if (wr_err != ERR_OK) {
+            printf("<---------------------------------- tcp_output wr_wrr is %s\n", lwip_strerr(wr_err));
+          }
         } else {
-          es->socks_buf.erase(es->socks_buf.begin(), es->socks_buf.end() - (es->socks_buf.size() - len));
+          printf("send_data_lwip: error %s len %d %d\n", lwip_strerr(err), len, tcp_sndbuf(pcb));
         }
-        es->socks_buf_used -= len;
-      } else {
-        printf("send_data_lwip: error %s len %d %d\n", lwip_strerr(err), len, tcp_sndbuf(pcb));
       }
     }
   }
@@ -274,10 +281,6 @@ static void send_data_lwip(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
 
 static void write_and_output(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
   send_data_lwip(pcb, es);
-  err_t wr_err = tcp_output(pcb);
-  if (wr_err != ERR_OK) {
-    printf("<---------------------------------- tcp_output wr_wrr is %s\n", lwip_strerr(wr_err));
-  }
 }
 
 
@@ -299,7 +302,9 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   if (0 == nreads) {
     printf("<---------------------------------- read EOF close socks fd %d.\n", watcher->fd);
     // write last data and then close
-    write_and_output(pcb, es);
+    do {
+      write_and_output(pcb, es);
+    } while (es->socks_buf_used > 0);
     free_all(loop, watcher, es, pcb);
     return;
   }
