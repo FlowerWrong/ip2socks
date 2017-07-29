@@ -3,21 +3,24 @@ project(ip2socks)
 
 set(CMAKE_CXX_STANDARD 11)
 
-# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -g -Wall -DLWIP_DEBUG")
-
 set(LIBEVDIR libev)
-set(LIBSDS sds)
+set(LIBYAML libyaml)
 set(LWIPDIR lwip/src)
 set(LWIPARCH port)
 
+include(cmake/liblwip.cmake)
+include(cmake/libyaml.cmake)
 include(cmake/libev.cmake)
-include(cmake/lwip.cmake)
 
 include_directories(
     ${LWIPDIR}/include
     ${LWIPARCH}/include
 
     ${LIBEVDIR}
+
+    ${LIBYAML}/include
+    ${LIBYAML}/win32
+    ${LIBYAML}/src
     
     src
 )
@@ -40,12 +43,12 @@ set(MAIN_SOURCE_FILES
 
 if (UNIX AND NOT APPLE)
     set(MAIN_SOURCE_FILES
-
         ${MAIN_SOURCE_FILES}
-
         # patch files
         ${LWIPARCH}/netif/tapif.c
         )
 endif ()
 
 add_executable(ip2socks ${MAIN_SOURCE_FILES})
+
+target_link_libraries(ip2socks yaml)

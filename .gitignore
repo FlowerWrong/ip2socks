@@ -21,6 +21,7 @@ ip2socks.dSYM/
 
 # main app
 ip2socks
+libyaml.*
 
 # cmake
 CMakeCache.txt
