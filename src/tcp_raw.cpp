@@ -1,7 +1,8 @@
 /**
  * based on lwip-contrib
  */
-#include <stdio.h>
+#include <iostream>
+
 #include <sys/socket.h>
 #include <netinet/in.h>
 #include <string.h>
@@ -34,13 +35,11 @@ struct tcp_raw_state {
     u8_t state;
     u8_t retries;
     struct tcp_pcb *pcb;
-    /* pbuf (chain) to recycle */
-    // struct pbuf *p;
     int socks_fd;
-    uint8_t buf[TCP_WND];
-    size_t buf_used;
-    uint8_t socks_buf[TCP_WND];
-    size_t socks_buf_used;
+    std::string buf;
+    u16_t buf_used;
+    std::string socks_buf;
+    u16_t socks_buf_used;
 };
 
 static void tcp_raw_send(struct tcp_pcb *tpcb, struct tcp_raw_state *es);
@@ -49,7 +48,10 @@ static void tcp_raw_send(struct tcp_pcb *tpcb, struct tcp_raw_state *es);
 static void
 tcp_raw_free(struct tcp_raw_state *es) {
   if (es != NULL) {
-    mem_free(es);
+    if (es->pcb != NULL) {
+      tcp_close(es->pcb);
+    }
+    free(es);
   }
 }
 
@@ -61,13 +63,12 @@ tcp_raw_close(struct tcp_pcb *tpcb, struct tcp_raw_state *es) {
     tcp_recv(tpcb, NULL);
     tcp_err(tpcb, NULL);
     tcp_poll(tpcb, NULL, 0);
-  }
-
-  if (tpcb != NULL) {
     tcp_close(tpcb);
   }
 
   if (es != NULL) {
+    es->socks_buf_used = 0;
+    es->buf_used = 0;
     if (es->socks_fd > 0) {
       printf("<---------------------------------- ev io fd %d to be close\n", es->socks_fd);
       if (&(es->io) != NULL) {
@@ -83,11 +84,13 @@ tcp_raw_close(struct tcp_pcb *tpcb, struct tcp_raw_state *es) {
 static void
 tcp_raw_send(struct tcp_pcb *tpcb, struct tcp_raw_state *es) {
   if (es->buf_used > 0) {
-    ssize_t ret = send(es->socks_fd, es->buf, es->buf_used, 0);
+    // 缓冲区的数据全部发送
+    ssize_t ret = send(es->socks_fd, es->buf.c_str(), es->buf_used, 0);
 
     if (ret > 0) {
       u16_t plen = es->buf_used;
 
+      es->buf.clear();
       es->buf_used = 0;
 
       /* we can read more data now */
@@ -108,7 +111,12 @@ tcp_raw_error(void *arg, err_t err) {
   es = (struct tcp_raw_state *) arg;
 
   if (es != NULL) {
-    tcp_raw_free(es);
+    printf("tcp_raw_error is %s\n", lwip_strerr(err));
+    if (es->pcb != NULL) {
+      tcp_raw_close(es->pcb, es);
+    } else {
+      tcp_raw_free(es);
+    }
   }
 }
 
@@ -164,6 +172,8 @@ tcp_raw_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
   struct tcp_raw_state *es;
   err_t ret_err;
 
+  char buf[TCP_WND];
+
   LWIP_ASSERT("arg != NULL", arg != NULL);
   es = (struct tcp_raw_state *) arg;
   if (p == NULL) {
@@ -182,29 +192,27 @@ tcp_raw_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
     if (p != NULL) {
       pbuf_free(p);
     }
+    // send last data
+    tcp_raw_send(tpcb, es);
     ret_err = err;
   } else if (es->state == ES_ACCEPTED) {
     /* first data chunk in p->payload */
     es->state = ES_RECEIVED;
 
-    // check if we have enough buffer
-    if (p->tot_len > sizeof(es->buf) - es->buf_used) {
-      printf("------------------------------> no buffer for data !?!\n");
-      return ERR_MEM;
-    }
-    pbuf_copy_partial(p, es->buf + es->buf_used, p->tot_len, 0);
+    pbuf_copy_partial(p, buf, p->tot_len, 0);
+
+    std::string buf_cpp(buf, p->tot_len);
+    es->buf.append(buf_cpp);
     es->buf_used += p->tot_len;
 
     tcp_raw_send(tpcb, es);
     ret_err = ERR_OK;
   } else if (es->state == ES_RECEIVED) {
-    // check if we have enough buffer
-    if (p->tot_len > sizeof(es->buf) - es->buf_used) {
-      printf("no buffer for data !?!\n");
-      return ERR_MEM;
-    }
     /* read some more data */
-    pbuf_copy_partial(p, es->buf + es->buf_used, p->tot_len, 0);
+    pbuf_copy_partial(p, buf, p->tot_len, 0);
+
+    std::string buf_cpp(buf, p->tot_len);
+    es->buf.append(buf_cpp);
     es->buf_used += p->tot_len;
     tcp_raw_send(tpcb, es);
 
@@ -213,13 +221,61 @@ tcp_raw_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
     /* unkown es->state, trash data  */
     tcp_recved(tpcb, p->tot_len);
     pbuf_free(p);
+    // send last data
+    tcp_raw_send(tpcb, es);
     ret_err = ERR_OK;
   }
   return ret_err;
 }
 
 static void free_all(struct ev_loop *loop, ev_io *watcher, struct tcp_raw_state *es, struct tcp_pcb *pcb) {
+  ev_io_stop(EV_DEFAULT, watcher);
+  close(watcher->fd);
+  es->socks_fd = 0;
   tcp_raw_close(pcb, es);
+}
+
+
+static void send_data_lwip(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
+  if (pcb != NULL && es != NULL) {
+    err_t err;
+    u16_t len;
+
+    /* We cannot send more data than space available in the send buffer. */
+    if (pcb->state != 0) {
+      if (tcp_sndbuf(pcb) < es->socks_buf_used) {
+        len = tcp_sndbuf(pcb);
+      } else {
+        len = es->socks_buf_used;
+      }
+
+      do {
+        err = tcp_write(pcb, es->socks_buf.c_str(), len, TCP_WRITE_FLAG_COPY);
+        if (err == ERR_MEM) {
+          len /= 2;
+        }
+      } while (err == ERR_MEM && len > 1);
+
+      if (err == ERR_OK) {
+        if (es->socks_buf.size() == len) {
+          es->socks_buf.clear();
+        } else {
+          es->socks_buf.erase(es->socks_buf.begin(), es->socks_buf.end() - (es->socks_buf.size() - len));
+        }
+        es->socks_buf_used -= len;
+      } else {
+        printf("send_data_lwip: error %s len %d %d\n", lwip_strerr(err), len, tcp_sndbuf(pcb));
+      }
+    }
+  }
+}
+
+static void write_and_output(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
+  send_data_lwip(pcb, es);
+  err_t wr_err = tcp_output(pcb);
+  if (wr_err != ERR_OK) {
+    printf("<---------------------------------- tcp_output wr_wrr is %s\n", lwip_strerr(wr_err));
+  }
 }
 
 
@@ -232,50 +288,29 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 
   nreads = recv(watcher->fd, buffer, BUFFER_SIZE, 0);
   if (nreads < 0) {
-    printf("<---------------------------------- read error [%d].\n", errno);
+    printf("<---------------------------------- read error [%d] force close!!!\n", errno);
     free_all(loop, watcher, es, pcb);
     return;
   }
 
+  // EOF
   if (0 == nreads) {
-    printf("<---------------------------------- close socks fd %d.\n", watcher->fd);
+    printf("<---------------------------------- read EOF close socks fd %d.\n", watcher->fd);
+    // write last data and then close
+    write_and_output(pcb, es);
     free_all(loop, watcher, es, pcb);
     return;
   }
 
-  // https://github.com/ambrop72/badvpn/blob/master/tun2socks/tun2socks.c#L1671
-  // write to tcp pcb
-  printf("read %ld bytes tcp_sndbuf(pcb) is %d\n", nreads, tcp_sndbuf(pcb));
-  if (nreads <= tcp_sndbuf(pcb)) {
-    err_t wr_err = ERR_OK;
-    wr_err = tcp_write(pcb, (void *) buffer, nreads, TCP_WRITE_FLAG_COPY);
-    if (wr_err == ERR_OK) {
-    } else if (ERR_MEM == wr_err) {
-      printf("<---------------------------------- out of memory\n");
+  /**
+   *
+   */
+  std::string buf_cpp(buffer, nreads);
+  es->socks_buf.append(buf_cpp);
+  es->socks_buf_used += nreads;
+  std::cout << "recv " << nreads << " data, " << "es->socks_buf_used is " << es->socks_buf_used << std::endl;
 
-      if (es->retries > 16) {
-        free_all(loop, watcher, es, pcb);
-        return;
-      }
-      es->retries += 1;
-      tcp_write(pcb, (void *) buffer, nreads, TCP_WRITE_FLAG_COPY);
-    } else {
-      printf("<---------------------------------- tcp_write wr_wrr is %d\n", wr_err);
-
-      free_all(loop, watcher, es, pcb);
-      return;
-    }
-    wr_err = tcp_output(pcb);
-    if (wr_err != ERR_OK) {
-      printf("<---------------------------------- tcp_output wr_wrr is %d\n", wr_err);
-      free_all(loop, watcher, es, pcb);
-      return;
-    }
-  } else {
-    // TODO
-    printf("<--------------------- ========== nreads %ld > tcp_sndbuf(pcb) %d\n", nreads, tcp_sndbuf(pcb));
-    free_all(loop, watcher, es, pcb);
-  }
+  write_and_output(pcb, es);
   return;
 }
 
@@ -328,14 +363,17 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
   }
   printf("socks 5 auth success fd is %d\n", socks_fd);
 
-  es = (struct tcp_raw_state *) mem_malloc(sizeof(struct tcp_raw_state));
+  es = (struct tcp_raw_state *) malloc(sizeof(struct tcp_raw_state));
+  memset(es, 0, sizeof(struct tcp_raw_state));
 
   if (es != NULL) {
     es->state = ES_ACCEPTED;
     es->pcb = newpcb;
     es->retries = 0;
+
     es->buf_used = 0;
     es->socks_buf_used = 0;
+
     es->socks_fd = socks_fd;
 
     ev_io_init(&(es->io), read_cb, socks_fd, EV_READ);

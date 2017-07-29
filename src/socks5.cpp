@@ -104,7 +104,7 @@ int socks5_auth(int sockfd, const char *server_host, const char *server_port, in
 
     const char host_len = (char) strlen(server_host);
     uint16_t port = htons(atoi(server_port));
-    buffer = malloc(strlen(server_host) + 7);
+    buffer = static_cast<char *>(malloc(strlen(server_host) + 7));
     temp = buffer;
     /* Assemble the request packet */
     (void) memcpy(temp, &v, sizeof(v));

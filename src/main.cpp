@@ -2,9 +2,9 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <iostream>
 
 #include "ev.h"
-#include "sds.h"
 
 #include "lwip/init.h"
 #include "lwip/mem.h"
@@ -128,10 +128,6 @@ main(int argc, char **argv) {
   /* lwip/src/core/init.c */
   lwip_init();
 
-  sds sds_str = sdsnew("sds worked");
-  printf("%s\n", sds_str);
-  sdsfree(sds_str);
-
   /*
     netif_add lwip/core/netif.c
     tapif_init port/netif/tapif.c -> netif->output = etharp_output and netif->linkoutput = low_level_output
@@ -162,7 +158,7 @@ main(int argc, char **argv) {
   udp_raw_init();
   tcp_raw_init();
 
-  printf("Applications started.\n");
+  std::cout << "Ip2socks started!" << std::endl;
 
   struct ev_io *tuntap_io = (struct ev_io *) mem_malloc(sizeof(struct ev_io));
 

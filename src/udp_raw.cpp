@@ -84,12 +84,12 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
 
     response *buffer = (response *) malloc(sizeof(response));
-    buffer->buffer = malloc(2048);
+    buffer->buffer = static_cast<char *>(malloc(2048));
     char *query;
 
     pbuf_copy_partial(p, buffer->buffer, p->tot_len, 0);
 
-    query = malloc(p->len + 3);
+    query = static_cast<char *>(malloc(p->len + 3));
     query[0] = 0;
     query[1] = (char) p->len;
     memcpy(query + 2, buffer->buffer, p->len);

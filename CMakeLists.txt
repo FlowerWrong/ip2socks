@@ -1,7 +1,9 @@
 cmake_minimum_required(VERSION 2.8)
-project(ip2socks C)
+project(ip2socks)
 
-set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -g -Wall -DLWIP_DEBUG")
+set(CMAKE_CXX_STANDARD 11)
+
+# set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -g -Wall -DLWIP_DEBUG")
 
 set(LIBEVDIR libev)
 set(LIBSDS sds)
@@ -16,16 +18,12 @@ include_directories(
     ${LWIPARCH}/include
 
     ${LIBEVDIR}
-    ${LIBSDS}
     
     src
 )
 
 
 set(MAIN_SOURCE_FILES
-    
-    sds/sds.c
-
     ${LWIP_SOURCE_FILES}
 
     # patch files
@@ -33,10 +31,10 @@ set(MAIN_SOURCE_FILES
 
     ${LIBEVDIR}/ev.c
 
-    src/socks5.c
-    src/tcp_raw.c
-    src/udp_raw.c
-    src/main.c
+    src/socks5.cpp
+    src/tcp_raw.cpp
+    src/udp_raw.cpp
+    src/main.cpp
     )
 
 if (UNIX AND NOT APPLE)
