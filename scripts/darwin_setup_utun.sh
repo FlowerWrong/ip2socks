@@ -15,7 +15,6 @@ orig_gw=$(netstat -nr | grep --color=never '^default' | grep -v 'utun' | sed 's/
 echo $orig_gw
 
 # configure IP address and MTU of VPN interface
-ifconfig $intf $local_tun_ip $remote_tun_ip mtu $mtu netmask 255.255.255.0 up
 echo $SOCKS_SERVER
 echo $orig_gw
 route add -net $SOCKS_SERVER $orig_gw
@@ -28,3 +27,7 @@ done
 # change routing table
 route add -net 128.0.0.0 $remote_tun_ip -netmask 128.0.0.0
 route add -net 0.0.0.0 $remote_tun_ip -netmask 128.0.0.0
+
+# dns
+route add -host 114.114.114.114 10.0.0.1
+route add -host 223.5.5.5 10.0.0.1

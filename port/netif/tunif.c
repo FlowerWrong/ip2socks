@@ -40,10 +40,6 @@
 #define DEVTUN "/dev/tun0"
 #define NETMASK_ARGS "netmask %d.%d.%d.%d"
 #define IFCONFIG_ARGS "tun0 inet %d.%d.%d.%d " NETMASK_ARGS " link0"
-#else /* others */
-#define DEVTUN "/dev/tun0"
-#define NETMASK_ARGS "netmask %d.%d.%d.%d"
-#define IFCONFIG_ARGS "tun0 inet %d.%d.%d.%d " NETMASK_ARGS
 #endif
 
 #if defined(LWIP_UNIX_MACH)
@@ -55,10 +51,14 @@
 #include <sys/kern_event.h>
 #include <sys/ioctl.h>
 
+
+#define IFCONFIG_ARGS "%s %d.%d.%d.%d %d.%d.%d.%d mtu %d netmask %d.%d.%d.%d up"
+
 #endif /* LWIP_UNIX_MACH */
 
+#define IFCONFIG_BIN "/sbin/ifconfig "
+
 struct tunif {
-    /* Add whatever per-interface state that is needed here. */
     int fd;
 };
 
@@ -194,6 +194,9 @@ int tun_create(char *dev) {
 static void
 low_level_init(struct netif *netif) {
   struct tunif *tunif;
+  int ret = 0;
+  char buf[1024];
+
 #if defined(LWIP_UNIX_MACH)
   char tun_name[16];
   memcpy(tun_name, "utun7", 5);
@@ -216,6 +219,38 @@ low_level_init(struct netif *netif) {
   printf("tunif_init: fd %d %s\n", tunif->fd, tun_name);
   if (tunif->fd < 1) {
     perror("tunif_init failed\n");
+    exit(1);
+  }
+
+#if defined(LWIP_UNIX_MACH)
+  // ifconfig $intf $local_tun_ip $remote_tun_ip mtu $mtu netmask 255.255.255.0 up
+  snprintf(buf, 1024, IFCONFIG_BIN
+    IFCONFIG_ARGS,
+           tun_name,
+           ip4_addr1(netif_ip4_gw(netif)),
+           ip4_addr2(netif_ip4_gw(netif)),
+           ip4_addr3(netif_ip4_gw(netif)),
+           ip4_addr4(netif_ip4_gw(netif)),
+           ip4_addr1(netif_ip4_gw(netif)),
+           ip4_addr2(netif_ip4_gw(netif)),
+           ip4_addr3(netif_ip4_gw(netif)),
+           ip4_addr4(netif_ip4_gw(netif)),
+           1500,
+           ip4_addr1(netif_ip4_netmask(netif)),
+           ip4_addr2(netif_ip4_netmask(netif)),
+           ip4_addr3(netif_ip4_netmask(netif)),
+           ip4_addr4(netif_ip4_netmask(netif))
+  );
+  ret = system(buf);
+#endif /* LWIP_UNIX_MACH */
+
+#if defined(LWIP_UNIX_LINUX)
+  ret = system("ip addr add 10.0.0.1/24 dev tun0");
+  ret = system("ip link set tun0 up");
+#endif
+
+  if (ret < 0) {
+    perror("ifconfig failed");
     exit(1);
   }
 

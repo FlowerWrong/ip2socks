@@ -43,8 +43,8 @@ static struct option longopts[] = {
   {"ipaddr",           required_argument, NULL, 'i'},
   /* netmask */
   {"netmask",          required_argument, NULL, 'm'},
-  /* ping destination */
-  {"trap_destination", required_argument, NULL, 't'},
+  /* shell script */
+  {"shell",            required_argument, NULL, 's'},
   /* new command line options go here! */
   {NULL, 0,                               NULL, 0}
 };
@@ -109,7 +109,7 @@ main(int argc, char **argv) {
       case 'm':
         ip4addr_aton(optarg, &netmask);
             break;
-      case 't':
+      case 's':
         break;
       default:
         usage();
