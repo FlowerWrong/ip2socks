@@ -95,10 +95,6 @@ tcp_raw_send(struct tcp_pcb *tpcb, struct tcp_raw_state *es) {
 
       /* we can read more data now */
       tcp_recved(tpcb, plen);
-
-      if (es->lwip_blocked) {
-        es->lwip_blocked = 0;
-      }
     } else {
       printf("<-------------------------------------- send to socks failed %ld\n", ret);
       tcp_raw_close(tpcb, es);
@@ -297,7 +293,7 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   struct tcp_raw_state *es = container_of(watcher, struct tcp_raw_state, io);
   struct tcp_pcb *pcb = es->pcb;
 
-  if (tcp_sndqueuelen(pcb) > (TCP_SND_QUEUELEN / 2)) {
+  if (es->socks_buf_used > BUFFER_SIZE) {
     es->lwip_blocked = 1;
     return;
   }
