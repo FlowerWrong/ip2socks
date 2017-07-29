@@ -40,6 +40,7 @@ struct tcp_raw_state {
     u16_t buf_used;
     std::string socks_buf;
     u16_t socks_buf_used;
+    int lwip_blocked;
 };
 
 static void tcp_raw_send(struct tcp_pcb *tpcb, struct tcp_raw_state *es);
@@ -94,6 +95,10 @@ tcp_raw_send(struct tcp_pcb *tpcb, struct tcp_raw_state *es) {
 
       /* we can read more data now */
       tcp_recved(tpcb, plen);
+
+      if (es->lwip_blocked) {
+        es->lwip_blocked = 0;
+      }
     } else {
       printf("<-------------------------------------- send to socks failed %ld\n", ret);
       tcp_raw_close(tpcb, es);
@@ -270,6 +275,10 @@ static void send_data_lwip(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
           err_t wr_err = tcp_output(pcb);
           if (wr_err != ERR_OK) {
             printf("<---------------------------------- tcp_output wr_wrr is %s\n", lwip_strerr(wr_err));
+          } else {
+            if (es->lwip_blocked) {
+              es->lwip_blocked = 0;
+            }
           }
         } else {
           printf("send_data_lwip: error %s len %d %d\n", lwip_strerr(err), len, tcp_sndbuf(pcb));
@@ -287,6 +296,11 @@ static void write_and_output(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
 static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   struct tcp_raw_state *es = container_of(watcher, struct tcp_raw_state, io);
   struct tcp_pcb *pcb = es->pcb;
+
+  if (tcp_sndqueuelen(pcb) > (TCP_SND_QUEUELEN / 2)) {
+    es->lwip_blocked = 1;
+    return;
+  }
 
   char buffer[BUFFER_SIZE];
   ssize_t nreads;
@@ -381,6 +395,7 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
     es->buf_used = 0;
     es->socks_buf_used = 0;
+    es->lwip_blocked = 0;
 
     es->socks_fd = socks_fd;
 
