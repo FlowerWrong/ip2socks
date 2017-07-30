@@ -23,33 +23,26 @@ typedef struct {
 } response;
 
 int tcp_dns_query(void *query, response *buffer, int len) {
-  char buf[BUFFER_SIZE];
-
   int sock = socks5_connect(conf->socks_server, conf->socks_port);
   if (sock < 1) {
     printf("socks5 connect failed\n");
     return -1;
   }
 
-  // socks handshake
-  send(sock, "\x05\x01\x00", 3, 0);
-  recv(sock, buf, BUFFER_SIZE, 0);
-
-  srand(static_cast<unsigned int>(time(NULL)));
-
-  // select random dns server
-  in_addr_t remote_dns = inet_addr(conf->remote_dns_server);
-  memcpy(buf, "\x05\x01\x00\x01", 4);
-  memcpy(buf + 4, &remote_dns, 4);
-  memcpy(buf + 8, "\x00\x35", 2);
-
-  send(sock, buf, 10, 0);
-  recv(sock, buf, BUFFER_SIZE, 0);
+  int ret = socks5_auth(sock, conf->remote_dns_server, "53", 1);
+  if (ret < 0) {
+    printf("socks5 auth failed\n");
+    return -1;
+  }
 
   // forward dns query
   send(sock, query, len, 0);
   buffer->length = recv(sock, buffer->buffer, 4096, 0);
   return sock;
+}
+
+int udp_relay(void *query, response *buffer, int len) {
+  return 0;
 }
 
 /**
