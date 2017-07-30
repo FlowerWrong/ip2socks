@@ -57,6 +57,13 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 
 * [ ] fake DNS server
 * [ ] http/https proxy server
+* [ ] lwip `keep-alive` support
+* [ ] lwip `SO_REUSEADDR` support
+* [ ] TCP fast open with Linux kernel > 3.7.0
+* [ ] socks 5 client UDP relay
+* [ ] FreeBSD support
+* [ ] Android support
+* [ ] iOS support
 
 ## How to remove submodule?
 
