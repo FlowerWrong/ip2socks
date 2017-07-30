@@ -62,6 +62,8 @@ struct tunif {
     int fd;
 };
 
+#define BUFFER_SIZE 1500
+
 /* Forward declarations. */
 void tunif_input(struct netif *netif);
 
@@ -197,6 +199,7 @@ low_level_init(struct netif *netif) {
   int ret = 0;
   char buf[1024];
 
+  // TODO tun name auto
 #if defined(LWIP_UNIX_MACH)
   char tun_name[16];
   memcpy(tun_name, "utun7", 5);
@@ -206,7 +209,6 @@ low_level_init(struct netif *netif) {
   char tun_name[IFNAMSIZ];
   tun_name[0] = '\0';
 #endif
-  printf("tun name is %s", tun_name);
 
 
   tunif = (struct tunif *) netif->state;
@@ -235,7 +237,7 @@ low_level_init(struct netif *netif) {
            ip4_addr2(netif_ip4_gw(netif)),
            ip4_addr3(netif_ip4_gw(netif)),
            ip4_addr4(netif_ip4_gw(netif)),
-           1500,
+           BUFFER_SIZE,
            ip4_addr1(netif_ip4_netmask(netif)),
            ip4_addr2(netif_ip4_netmask(netif)),
            ip4_addr3(netif_ip4_netmask(netif)),
@@ -269,7 +271,7 @@ low_level_init(struct netif *netif) {
 
 static err_t
 low_level_output(struct tunif *tunif, struct pbuf *p) {
-  char buf[1500];
+  char buf[BUFFER_SIZE];
   int ret;
 
   /* initiate transfer(); */
@@ -301,7 +303,7 @@ static struct pbuf *
 low_level_input(struct tunif *tunif) {
   struct pbuf *p;
   ssize_t len;
-  char buf[1500];
+  char buf[BUFFER_SIZE];
 
   /* Obtain the size of the packet and put it into the "len"
      variable. */

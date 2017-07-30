@@ -13,6 +13,8 @@
 #include "lwip/ip.h"
 #include "lwip/ip4_frag.h"
 
+#include "struct.h"
+
 #if defined(LWIP_UNIX_LINUX)
 
 #include "netif/tapif.h"
@@ -29,25 +31,24 @@
 /* (manual) host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
 
+static char *config_file;
+static char *shell_file;
+
 
 /* nonstatic debug cmd option, exported in lwipopts.h */
 unsigned char debug_flags;
 
 static struct option longopts[] = {
   /* turn on debugging output (if build with LWIP_DEBUG) */
-  {"debug",            no_argument,       NULL, 'd'},
+  {"debug",  no_argument,       NULL, 'd'},
   /* help */
-  {"help",             no_argument,       NULL, 'h'},
-  /* gateway address */
-  {"gateway",          required_argument, NULL, 'g'},
-  /* ip address */
-  {"ipaddr",           required_argument, NULL, 'i'},
-  /* netmask */
-  {"netmask",          required_argument, NULL, 'm'},
+  {"help",   no_argument,       NULL, 'h'},
+  /* config file */
+  {"config", required_argument, NULL, 'c'},
   /* shell script */
-  {"shell",            required_argument, NULL, 's'},
+  {"shell",  required_argument, NULL, 's'},
   /* new command line options go here! */
-  {NULL, 0,                               NULL, 0}
+  {NULL, 0,                     NULL, 0}
 };
 #define NUM_OPTS ((sizeof(longopts) / sizeof(struct option)) - 1)
 
@@ -63,14 +64,9 @@ usage(void) {
 
 #define BUFFER_SIZE 1514
 
-static void read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
+static void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
 
 struct netif netif;
-
-struct tuntapif {
-    /* Add whatever per-interface state that is needed here. */
-    int fd;
-};
 
 /**
  * 1 tun
@@ -101,17 +97,12 @@ main(int argc, char **argv) {
       case 'h':
         usage();
             exit(0);
-      case 'g':
-        ip4addr_aton(optarg, &gw);
-            break;
-      case 'i':
-        ip4addr_aton(optarg, &ipaddr);
-            break;
-      case 'm':
-        ip4addr_aton(optarg, &netmask);
+      case 'c':
+        config_file = optarg;
             break;
       case 's':
-        break;
+        shell_file = optarg;
+            break;
       default:
         usage();
             break;
@@ -120,80 +111,135 @@ main(int argc, char **argv) {
   argc -= optind;
   argv += optind;
 
-  strncpy(ip_str, ip4addr_ntoa(&ipaddr), sizeof(ip_str));
-  strncpy(nm_str, ip4addr_ntoa(&netmask), sizeof(nm_str));
-  strncpy(gw_str, ip4addr_ntoa(&gw), sizeof(gw_str));
-  printf("Host at %s mask %s gateway %s\n", ip_str, nm_str, gw_str);
+  if (config_file == nullptr) {
+    printf("Please provide config file\n");
+    exit(0);
+  }
 
-
-
-
-
-
+  printf("config file %s shell file %s\n", config_file, shell_file);
 
 
   /**
-   * yaml
+   * yaml config parser start
    */
-  FILE *fh = fopen("/Users/kingyang/dev/java/lipu/ip2socks/scripts/config.example.yml", "r");
+  FILE *fh = fopen(config_file, "r");
   yaml_parser_t parser;
-  yaml_event_t  event;   /* New variable */
+  yaml_token_t token;   /* new variable */
+  Conf *conf = static_cast<Conf *>(malloc(sizeof(Conf)));
 
   /* Initialize parser */
-  if(!yaml_parser_initialize(&parser))
+  if (!yaml_parser_initialize(&parser))
     fputs("Failed to initialize parser!\n", stderr);
-  if(fh == NULL)
+  if (fh == NULL)
     fputs("Failed to open file!\n", stderr);
 
   /* Set input file */
   yaml_parser_set_input_file(&parser, fh);
 
-  /* START new code */
-  do {
-    if (!yaml_parser_parse(&parser, &event)) {
-      printf("Parser error %d\n", parser.error);
-      exit(EXIT_FAILURE);
-    }
+  /**
+   * state = 0 = expect key
+   * state = 1 = expect value
+   */
+  int state = 0;
+  char **datap;
+  char *tk;
 
-    switch(event.type)
-    {
-      case YAML_NO_EVENT: puts("No event!"); break;
-            /* Stream start/end */
-      case YAML_STREAM_START_EVENT: puts("STREAM START"); break;
-      case YAML_STREAM_END_EVENT:   puts("STREAM END");   break;
+  /* BEGIN new code */
+  do {
+    yaml_parser_scan(&parser, &token);
+    switch (token.type) {
+      /* Stream start/end */
+      case YAML_STREAM_START_TOKEN:
+        puts("STREAM START");
+            break;
+      case YAML_STREAM_END_TOKEN:
+        puts("STREAM END");
+            break;
+            /* Token types (read before actual token) */
+      case YAML_KEY_TOKEN:
+        printf("(Key token)   ");
+            state = 0;
+            break;
+      case YAML_VALUE_TOKEN:
+        printf("(Value token) ");
+            state = 1;
+            break;
             /* Block delimeters */
-      case YAML_DOCUMENT_START_EVENT: puts("<b>Start Document</b>"); break;
-      case YAML_DOCUMENT_END_EVENT:   puts("<b>End Document</b>");   break;
-      case YAML_SEQUENCE_START_EVENT: puts("<b>Start Sequence</b>"); break;
-      case YAML_SEQUENCE_END_EVENT:   puts("<b>End Sequence</b>");   break;
-      case YAML_MAPPING_START_EVENT:  puts("<b>Start Mapping</b>");  break;
-      case YAML_MAPPING_END_EVENT:    puts("<b>End Mapping</b>");    break;
+      case YAML_BLOCK_SEQUENCE_START_TOKEN:
+        puts("<b>Start Block (Sequence)</b>");
+            break;
+      case YAML_BLOCK_ENTRY_TOKEN:
+        puts("<b>Start Block (Entry)</b>");
+            break;
+      case YAML_BLOCK_END_TOKEN:
+        puts("<b>End block</b>");
+            break;
             /* Data */
-      case YAML_ALIAS_EVENT:  printf("Got alias (anchor %s)\n", event.data.alias.anchor); break;
-      case YAML_SCALAR_EVENT: printf("Got scalar (value %s)\n", event.data.scalar.value); break;
+      case YAML_BLOCK_MAPPING_START_TOKEN:
+        puts("[Block mapping]");
+            break;
+      case YAML_SCALAR_TOKEN:
+        printf("scalar %s \n", token.data.scalar.value);
+            tk = (char *) token.data.scalar.value;
+            if (state == 0) {
+              if (!strcmp(tk, "ip_mode")) {
+                datap = &conf->ip_mode;
+              } else if (!strcmp(tk, "socks_server")) {
+                datap = &conf->socks_server;
+              } else if (!strcmp(tk, "socks_port")) {
+                datap = &conf->socks_port;
+              } else if (!strcmp(tk, "remote_dns_server")) {
+                datap = &conf->remote_dns_server;
+              } else if (!strcmp(tk, "gw")) {
+                datap = &conf->gw;
+              } else if (!strcmp(tk, "addr")) {
+                datap = &conf->addr;
+              } else if (!strcmp(tk, "netmask")) {
+                datap = &conf->netmask;
+              } else {
+                printf("Unrecognised key: %s\n", tk);
+              }
+            } else {
+              *datap = strdup(tk);
+            }
+            break;
+            /* Others */
+      default:
+        printf("Got token of type %d\n", token.type);
     }
-    if(event.type != YAML_STREAM_END_EVENT)
-      yaml_event_delete(&event);
-  } while(event.type != YAML_STREAM_END_EVENT);
-  yaml_event_delete(&event);
+    if (token.type != YAML_STREAM_END_TOKEN)
+      yaml_token_delete(&token);
+  } while (token.type != YAML_STREAM_END_TOKEN);
+  yaml_token_delete(&token);
   /* END new code */
 
   /* Cleanup */
   yaml_parser_delete(&parser);
   fclose(fh);
 
+  printf("%s %s\n", conf->remote_dns_server, conf->ip_mode);
+  /**
+   * yaml config parser end
+   */
+
+  /**
+   * if config, overside default value
+   */
+  if (conf->gw != nullptr) {
+    ip4addr_aton(conf->gw, &gw);
+  }
+  if (conf->addr != nullptr) {
+    ip4addr_aton(conf->addr, &ipaddr);
+  }
+  if (conf->netmask != nullptr) {
+    ip4addr_aton(conf->netmask, &netmask);
+  }
 
 
-
-
-
-
-
-
-
-
-
-
+  strncpy(ip_str, ip4addr_ntoa(&ipaddr), sizeof(ip_str));
+  strncpy(nm_str, ip4addr_ntoa(&netmask), sizeof(nm_str));
+  strncpy(gw_str, ip4addr_ntoa(&gw), sizeof(gw_str));
+  printf("Host at %s mask %s gateway %s\n", ip_str, nm_str, gw_str);
 
 
   /* lwip/src/core/init.c */
@@ -242,7 +288,7 @@ main(int argc, char **argv) {
   struct tuntapif *tuntapif;
   tuntapif = (struct tuntapif *) ((&netif)->state);
 
-  ev_io_init(tuntap_io, read_cb, tuntapif->fd, EV_READ);
+  ev_io_init(tuntap_io, tuntap_read_cb, tuntapif->fd, EV_READ);
   ev_io_start(loop, tuntap_io);
 
   // TODO
@@ -251,7 +297,7 @@ main(int argc, char **argv) {
   return ev_run(loop, 0);
 }
 
-static void read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
+static void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
   if (TUNTAP == 1) {
     tunif_input(&netif);
   } else {
