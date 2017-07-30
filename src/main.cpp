@@ -120,7 +120,6 @@ main(int argc, char **argv) {
   FILE *fh = fopen(config_file, "r");
   yaml_parser_t parser;
   yaml_token_t token;   /* new variable */
-  Conf *conf = static_cast<Conf *>(malloc(sizeof(Conf)));
 
   /* Initialize parser */
   if (!yaml_parser_initialize(&parser))

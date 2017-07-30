@@ -20,4 +20,6 @@ struct tuntapif {
     int fd;
 };
 
+extern struct Conf *conf;
+
 #endif //EV_STRUCT_H_H

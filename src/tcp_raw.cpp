@@ -9,6 +9,7 @@
 
 #include "socks5.h"
 #include "ev.h"
+#include "struct.h"
 
 #include "lwip/opt.h"
 #include "lwip/stats.h"
@@ -364,9 +365,8 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
    * socks 5
    */
   int socks_fd = 0;
-  char *ip = "127.0.0.1";
 
-  socks_fd = socks5_connect(ip, "1080");
+  socks_fd = socks5_connect(conf->socks_server, conf->socks_port);
   if (socks_fd < 1) {
     printf("socks5 connect failed\n");
     return -1;

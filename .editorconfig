@@ -20,6 +20,11 @@ charset = utf-8
 indent_style = space
 indent_size = 2
 
+[*.h]
+charset = utf-8
+indent_style = space
+indent_size = 2
+
 # Tab indentation (no size specified)
 [Makefile]
 indent_style = tab

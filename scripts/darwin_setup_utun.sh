@@ -20,9 +20,9 @@ echo $orig_gw
 route add -net $SOCKS_SERVER $orig_gw
 
 # 国内网段走家用网关（路由器）的 IP 地址
-for i in $(cat $CHINA_IP); do
-    route add -net $i $orig_gw
-done
+#for i in $(cat $CHINA_IP); do
+#    route add -net $i $orig_gw
+#done
 
 # change routing table
 route add -net 128.0.0.0 $remote_tun_ip -netmask 128.0.0.0

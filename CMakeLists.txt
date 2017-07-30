@@ -21,8 +21,9 @@ include_directories(
     ${LIBYAML}/include
     ${LIBYAML}/win32
     ${LIBYAML}/src
-    
+
     src
+    src/netif
 )
 
 
@@ -30,11 +31,12 @@ set(MAIN_SOURCE_FILES
     ${LWIP_SOURCE_FILES}
 
     # patch files
-    ${LWIPARCH}/netif/tunif.c
-    ${LWIPARCH}/netif/socket_util.c
+    src/netif/tunif.c
+    src/netif/socket_util.c
 
     ${LIBEVDIR}/ev.c
 
+    src/struct.cpp
     src/socks5.cpp
     src/tcp_raw.cpp
     src/udp_raw.cpp
@@ -45,7 +47,7 @@ if (UNIX AND NOT APPLE)
     set(MAIN_SOURCE_FILES
         ${MAIN_SOURCE_FILES}
         # patch files
-        ${LWIPARCH}/netif/tapif.c
+        src/netif/tapif.c
         )
 endif ()
 

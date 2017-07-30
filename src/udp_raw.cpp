@@ -7,8 +7,10 @@
 #include <time.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
+#include "lwip/ip.h"
 
 #include "udp_raw.h"
+#include "struct.h"
 
 #if LWIP_UDP
 
@@ -19,9 +21,6 @@ typedef struct {
     int length;
 } response;
 
-int SOCKS_PORT = 1080;
-char *SOCKS_ADDR = {"127.0.0.1"};
-
 void tcp_dns_query(void *query, response *buffer, int len) {
   int sock;
   struct sockaddr_in socks_server;
@@ -29,8 +28,8 @@ void tcp_dns_query(void *query, response *buffer, int len) {
 
   memset(&socks_server, 0, sizeof(socks_server));
   socks_server.sin_family = AF_INET;
-  socks_server.sin_port = htons(SOCKS_PORT);
-  socks_server.sin_addr.s_addr = inet_addr(SOCKS_ADDR);
+  socks_server.sin_port = htons(atoi(conf->socks_port));
+  socks_server.sin_addr.s_addr = inet_addr(conf->socks_server);
 
   sock = socket(AF_INET, SOCK_STREAM, 0);
   if (sock < 0)
@@ -46,7 +45,7 @@ void tcp_dns_query(void *query, response *buffer, int len) {
   srand(time(NULL));
 
   // select random dns server
-  in_addr_t remote_dns = inet_addr("8.8.8.8");
+  in_addr_t remote_dns = inet_addr(conf->remote_dns_server);
   memcpy(tmp, "\x05\x01\x00\x01", 4);
   memcpy(tmp + 4, &remote_dns, 4);
   memcpy(tmp + 8, "\x00\x35", 2);
@@ -108,7 +107,7 @@ udp_raw_init(void) {
 
     /* lwip/src/core/udp.c add udp_pcb to udp_pcbs */
     ip4_addr_t ipaddr;
-    IP4_ADDR(&ipaddr, 10, 0, 0, 2);
+    ip4addr_aton(conf->addr, &ipaddr);
     err = udp_bind(udp_raw_pcb, &ipaddr, 53);
 //    err = udp_bind(udp_raw_pcb, IP_ANY_TYPE, 53);
     if (err == ERR_OK) {
