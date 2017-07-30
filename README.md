@@ -51,7 +51,12 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 
 ## Know bugs
 
-[x] too many `CLOSE_WAIT` to socks server, see `netstat -an | grep CLOSE_WAIT | wc -l`
+* [x] too many `CLOSE_WAIT` to socks server, see `netstat -an | grep CLOSE_WAIT | wc -l`
+
+## TODO
+
+* [ ] fake DNS server
+* [ ] http/https proxy server
 
 ## How to remove submodule?
 
