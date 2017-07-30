@@ -18,7 +18,10 @@ vagrant ssh
 
 ## Library
 
-* [antirez/sds](https://github.com/antirez/sds)
+* C++ 11
+* [lwip](https://github.com/FlowerWrong/lwip)
+* [libev](http://software.schmorp.de/pkg/libev.html)
+* [libyaml](https://github.com/yaml/libyaml)
 
 ## Remove submodule
 
@@ -30,19 +33,3 @@ Commit
 Delete the now untracked submodule files.
 Remove directory .git/modules/<submodule name>
 ```
-
-## References
-
-* [ANDROID: BADVPN中使用的LWIP的版本及TUN2SOCKS工作原理](https://www.brobwind.com/archives/1401)
-* [takayuki/lwip-tap](https://github.com/takayuki/lwip-tap)
-* [tun2tor](https://github.com/iCepa/tun2tor)
-* [FlowerWrong/ShadowVPN](https://github.com/FlowerWrong/ShadowVPN)
-
-## dns
-
-* [DNSPod/dnspod-sr](https://github.com/DNSPod/dnspod-sr)
-* [vstakhov/librdns](https://github.com/vstakhov/librdns)
-* [jtripper/dns-tcp-socks-proxy](https://github.com/jtripper/dns-tcp-socks-proxy)
-* [vietor/dnsproxy](https://github.com/vietor/dnsproxy)
-* [getdnsapi/getdns](https://github.com/getdnsapi/getdns)
-* [NLnetLabs/ldns](https://github.com/NLnetLabs/ldns)
