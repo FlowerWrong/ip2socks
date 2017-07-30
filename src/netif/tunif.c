@@ -139,6 +139,8 @@ int tun_create(char *dev) {
     return err;
   }
 
+  strcpy(dev, ifr.ifr_name);
+
   printf("Open tun/tap device: %s for reading...\n", ifr.ifr_name);
 #endif
 
