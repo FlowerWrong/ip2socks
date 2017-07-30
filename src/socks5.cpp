@@ -46,6 +46,7 @@ int socks5_connect(const char *proxy_host, const char *proxy_port) {
     printf("connect failed\n");
     return -1;
   }
+
   return socks_fd;
 }
 

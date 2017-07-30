@@ -11,6 +11,7 @@
 
 #include "udp_raw.h"
 #include "struct.h"
+#include "socks5.h"
 
 #if LWIP_UDP
 
@@ -18,44 +19,37 @@ static struct udp_pcb *udp_raw_pcb;
 
 typedef struct {
     char *buffer;
-    int length;
+    ssize_t length;
 } response;
 
-void tcp_dns_query(void *query, response *buffer, int len) {
-  int sock;
-  struct sockaddr_in socks_server;
-  char tmp[1024];
+int tcp_dns_query(void *query, response *buffer, int len) {
+  char buf[BUFFER_SIZE];
 
-  memset(&socks_server, 0, sizeof(socks_server));
-  socks_server.sin_family = AF_INET;
-  socks_server.sin_port = htons(atoi(conf->socks_port));
-  socks_server.sin_addr.s_addr = inet_addr(conf->socks_server);
-
-  sock = socket(AF_INET, SOCK_STREAM, 0);
-  if (sock < 0)
-    printf("[!] Error creating TCP socket");
-
-  if (connect(sock, (struct sockaddr *) &socks_server, sizeof(socks_server)) < 0)
-    printf("[!] Error connecting to proxy");
+  int sock = socks5_connect(conf->socks_server, conf->socks_port);
+  if (sock < 1) {
+    printf("socks5 connect failed\n");
+    return -1;
+  }
 
   // socks handshake
   send(sock, "\x05\x01\x00", 3, 0);
-  recv(sock, tmp, 1024, 0);
+  recv(sock, buf, BUFFER_SIZE, 0);
 
-  srand(time(NULL));
+  srand(static_cast<unsigned int>(time(NULL)));
 
   // select random dns server
   in_addr_t remote_dns = inet_addr(conf->remote_dns_server);
-  memcpy(tmp, "\x05\x01\x00\x01", 4);
-  memcpy(tmp + 4, &remote_dns, 4);
-  memcpy(tmp + 8, "\x00\x35", 2);
+  memcpy(buf, "\x05\x01\x00\x01", 4);
+  memcpy(buf + 4, &remote_dns, 4);
+  memcpy(buf + 8, "\x00\x35", 2);
 
-  send(sock, tmp, 10, 0);
-  recv(sock, tmp, 1024, 0);
+  send(sock, buf, 10, 0);
+  recv(sock, buf, BUFFER_SIZE, 0);
 
   // forward dns query
   send(sock, query, len, 0);
-  buffer->length = recv(sock, buffer->buffer, 2048, 0);
+  buffer->length = recv(sock, buffer->buffer, 4096, 0);
+  return sock;
 }
 
 /**
@@ -79,7 +73,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     memcpy(query + 2, buffer->buffer, p->len);
 
     // forward the packet to the tcp dns server
-    tcp_dns_query(query, buffer, p->len + 2);
+    int socks_fd = tcp_dns_query(query, buffer, p->len + 2);
 
     if (buffer->length > 0) {
       /* send received packet back to sender */
@@ -90,6 +84,9 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       /* free the pbuf */
       pbuf_free(socksp);
     }
+
+    // close socks dns socket
+    close(socks_fd);
 
     free(buffer->buffer);
     free(buffer);

@@ -465,7 +465,7 @@
  * state are cleaned up from the 'tcp_tw_pcbs' queue in a more timely fashion
  * (by 'tcp_slowtmr()').
  */
-#define TCP_MSL 1000UL
+// #define TCP_MSL 1000UL
 
 #define TCP_MSS 1460
 #define TCP_WND 0xFFFF

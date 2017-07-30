@@ -73,8 +73,8 @@ tcp_raw_close(struct tcp_pcb *tpcb, struct tcp_raw_state *es) {
     es->buf_used = 0;
     if (es->socks_fd > 0) {
       if (&(es->io) != NULL) {
-        ev_io_stop(EV_DEFAULT, &(es->io));
         close(es->socks_fd);
+        ev_io_stop(EV_DEFAULT, &(es->io));
       }
     }
 
@@ -233,8 +233,8 @@ tcp_raw_recv(void *arg, struct tcp_pcb *tpcb, struct pbuf *p, err_t err) {
 }
 
 static void free_all(struct ev_loop *loop, ev_io *watcher, struct tcp_raw_state *es, struct tcp_pcb *pcb) {
-  ev_io_stop(EV_DEFAULT, watcher);
   close(watcher->fd);
+  ev_io_stop(EV_DEFAULT, watcher);
   es->socks_fd = 0;
   tcp_raw_close(pcb, es);
 }

@@ -49,6 +49,10 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [libev](http://software.schmorp.de/pkg/libev.html)
 * [libyaml](https://github.com/yaml/libyaml)
 
+## Know bugs
+
+[x] too many `CLOSE_WAIT` to socks server, see `netstat -an | grep CLOSE_WAIT | wc -l`
+
 ## How to remove submodule?
 
 ```
