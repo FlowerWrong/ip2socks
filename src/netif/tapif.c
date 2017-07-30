@@ -31,25 +31,21 @@
  * is created in advance with `tunctl -u <user>` it can be opened as a regular
  * user. The network must already be configured. If DEVTAP_IF is defined it
  * will be opened instead of creating a new tap device.
- *
- * You can also use PRECONFIGURED_TAPIF environment variable to do so.
  */
-#ifndef DEVTAP_DEFAULT_IF
-#define DEVTAP_DEFAULT_IF "tap0"
-#endif
 #ifndef DEVTAP
 #define DEVTAP "/dev/net/tun"
 #endif
+
 #define NETMASK_ARGS "netmask %d.%d.%d.%d"
-#define IFCONFIG_ARGS "tap0 inet %d.%d.%d.%d " NETMASK_ARGS
+#define IFCONFIG_ARGS "%s inet %d.%d.%d.%d " NETMASK_ARGS
 #elif defined(LWIP_UNIX_OPENBSD)
 #define DEVTAP "/dev/tun0"
 #define NETMASK_ARGS "netmask %d.%d.%d.%d"
-#define IFCONFIG_ARGS "tun0 inet %d.%d.%d.%d " NETMASK_ARGS " link0"
+#define IFCONFIG_ARGS "%s inet %d.%d.%d.%d " NETMASK_ARGS " link0"
 #else /* others */
 #define DEVTAP "/dev/tap0"
 #define NETMASK_ARGS "netmask %d.%d.%d.%d"
-#define IFCONFIG_ARGS "tap0 inet %d.%d.%d.%d " NETMASK_ARGS
+#define IFCONFIG_ARGS "%s inet %d.%d.%d.%d " NETMASK_ARGS
 #endif
 
 /* Define those to better describe your network interface. */
@@ -68,6 +64,31 @@ struct tapif {
 /* Forward declarations. */
 void tapif_input(struct netif *netif);
 
+int tap_create(char *dev) {
+  int fd = -1;
+
+  if ((fd = open(DEVTAP, O_RDWR)) < 0) {
+    printf("open %s failed\n", DEVTAP);
+    return fd;
+  }
+
+#ifdef LWIP_UNIX_LINUX
+  struct ifreq ifr;
+  memset(&ifr, 0, sizeof(ifr));
+  ifr.ifr_flags = IFF_TAP | IFF_NO_PI;
+
+  if (ioctl(fd, TUNSETIFF, (void *) &ifr) < 0) {
+    printf("failed to open tap device\n");
+    close(fd);
+    return -1;
+  }
+  strcpy(dev, ifr.ifr_name);
+
+  printf("Open tun device: %s for reading...\n", ifr.ifr_name);
+#endif /* LWIP_UNIX_LINUX */
+  return fd;
+}
+
 /*-----------------------------------------------------------------------------------*/
 static void
 low_level_init(struct netif *netif) {
@@ -76,9 +97,12 @@ low_level_init(struct netif *netif) {
   int ret;
   char buf[1024];
 #endif /* LWIP_IPV4 */
-  char *preconfigured_tapif = getenv("PRECONFIGURED_TAPIF");
-
   tapif = (struct tapif *) netif->state;
+
+#if defined(LWIP_UNIX_LINUX)
+  char tap_name[IFNAMSIZ];
+#endif
+  tap_name[0] = '\0';
 
   /* Obtain MAC address from network interface. */
 
@@ -94,7 +118,7 @@ low_level_init(struct netif *netif) {
   /* device capabilities */
   netif->flags = NETIF_FLAG_BROADCAST | NETIF_FLAG_ETHARP | NETIF_FLAG_IGMP;
 
-  tapif->fd = open(DEVTAP, O_RDWR);
+  tapif->fd = tap_create(tap_name);
   LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_init: fd %d\n", tapif->fd));
   if (tapif->fd == -1) {
 #ifdef LWIP_UNIX_LINUX
@@ -107,58 +131,35 @@ low_level_init(struct netif *netif) {
 
   setnonblocking(tapif->fd);
 
-#ifdef LWIP_UNIX_LINUX
-  {
-    struct ifreq ifr;
-    memset(&ifr, 0, sizeof(ifr));
-
-    if (preconfigured_tapif) {
-      strncpy(ifr.ifr_name, preconfigured_tapif, sizeof(ifr.ifr_name));
-    } else {
-      strncpy(ifr.ifr_name, DEVTAP_DEFAULT_IF, sizeof(ifr.ifr_name));
-    } 
-    ifr.ifr_name[sizeof(ifr.ifr_name)-1] = 0; /* ensure \0 termination */
-
-    ifr.ifr_flags = IFF_TAP|IFF_NO_PI;
-    if (ioctl(tapif->fd, TUNSETIFF, (void *) &ifr) < 0) {
-      perror("tapif_init: "DEVTAP" ioctl TUNSETIFF");
-      exit(1);
-    }
-  }
-#endif /* LWIP_UNIX_LINUX */
-
   netif_set_link_up(netif);
 
-  if (preconfigured_tapif == NULL) {
 #if LWIP_IPV4
-    snprintf(buf, 1024, IFCONFIG_BIN
-      IFCONFIG_ARGS,
-             ip4_addr1(netif_ip4_gw(netif)),
-             ip4_addr2(netif_ip4_gw(netif)),
-             ip4_addr3(netif_ip4_gw(netif)),
-             ip4_addr4(netif_ip4_gw(netif)),
-#ifdef NETMASK_ARGS
-             ip4_addr1(netif_ip4_netmask(netif)),
-             ip4_addr2(netif_ip4_netmask(netif)),
-             ip4_addr3(netif_ip4_netmask(netif)),
-             ip4_addr4(netif_ip4_netmask(netif))
-#endif /* NETMASK_ARGS */
-    );
+  snprintf(buf, 1024, IFCONFIG_BIN
+    IFCONFIG_ARGS,
+           tap_name,
+           ip4_addr1(netif_ip4_gw(netif)),
+           ip4_addr2(netif_ip4_gw(netif)),
+           ip4_addr3(netif_ip4_gw(netif)),
+           ip4_addr4(netif_ip4_gw(netif)),
+           ip4_addr1(netif_ip4_netmask(netif)),
+           ip4_addr2(netif_ip4_netmask(netif)),
+           ip4_addr3(netif_ip4_netmask(netif)),
+           ip4_addr4(netif_ip4_netmask(netif))
+  );
 
-    LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_init: system(\"%s\");\n", buf));
-    ret = system(buf);
-    if (ret < 0) {
-      perror("ifconfig failed");
-      exit(1);
-    }
-    if (ret != 0) {
-      printf("ifconfig returned %d\n", ret);
-    }
-#else /* LWIP_IPV4 */
-    perror("todo: support IPv6 support for non-preconfigured tapif");
+  LWIP_DEBUGF(TAPIF_DEBUG, ("tapif_init: system(\"%s\");\n", buf));
+  ret = system(buf);
+  if (ret < 0) {
+    perror("ifconfig failed");
     exit(1);
-#endif /* LWIP_IPV4 */
   }
+  if (ret != 0) {
+    printf("ifconfig returned %d\n", ret);
+  }
+#else /* LWIP_IPV4 */
+  perror("todo: support IPv6 support for non-preconfigured tapif");
+  exit(1);
+#endif /* LWIP_IPV4 */
 }
 /*-----------------------------------------------------------------------------------*/
 /*

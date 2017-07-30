@@ -173,24 +173,23 @@ int tun_create(char *dev) {
   int fd = -1;
 #if defined(LWIP_UNIX_LINUX)
   struct ifreq ifr;
-  int err;
-  char *clonedev = DEVTUN;
 
-  if ((fd = open(clonedev, O_RDWR)) < 0) {
+  if ((fd = open(DEVTUN, O_RDWR)) < 0) {
+    printf("open %s failed\n", DEVTUN);
     return fd;
   }
 
   memset(&ifr, 0, sizeof(ifr));
   ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 
-  if ((err = ioctl(fd, TUNSETIFF, (void *) &ifr)) < 0) {
+  if (ioctl(fd, TUNSETIFF, (void *) &ifr) < 0) {
+    printf("failed to open tun device\n");
     close(fd);
-    return err;
+    return -1;
   }
-
   strcpy(dev, ifr.ifr_name);
 
-  printf("Open tun/tap device: %s for reading...\n", ifr.ifr_name);
+  printf("Open tun device: %s for reading...\n", ifr.ifr_name);
 #endif
 
 #if defined(LWIP_UNIX_MACH)

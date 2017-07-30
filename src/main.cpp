@@ -229,6 +229,13 @@ main(int argc, char **argv) {
 
   if (conf->ip_mode == NULL) {
     memcpy(conf->ip_mode, "tun", 3);
+  } else {
+#if defined(LWIP_UNIX_MACH)
+    if (strcmp("tap", conf->ip_mode) == 0) {
+      printf("apple does not support tap mode!!!\n");
+      exit(0);
+    }
+#endif /* LWIP_UNIX_MACH */
   }
 
 
