@@ -33,6 +33,7 @@ static ip4_addr_t ipaddr, netmask, gw;
 
 static char *config_file;
 static char *shell_file;
+static char *ip_mode;
 
 
 /* nonstatic debug cmd option, exported in lwipopts.h */
@@ -67,12 +68,6 @@ usage(void) {
 static void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
 
 struct netif netif;
-
-/**
- * 1 tun
- * 2 tap
- */
-#define TUNTAP 1
 
 int
 main(int argc, char **argv) {
@@ -235,6 +230,12 @@ main(int argc, char **argv) {
     ip4addr_aton(conf->netmask, &netmask);
   }
 
+  ip_mode = static_cast<char *>(malloc(3));
+  memcpy(ip_mode, "tun", 3);
+  if (conf->ip_mode != nullptr) {
+    memcpy(ip_mode, conf->ip_mode, 3);
+  }
+
 
   strncpy(ip_str, ip4addr_ntoa(&ipaddr), sizeof(ip_str));
   strncpy(nm_str, ip4addr_ntoa(&netmask), sizeof(nm_str));
@@ -255,7 +256,7 @@ main(int argc, char **argv) {
     ethernet_input -> ip4_input(p, netif)
                                           -> upd_input -> pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src) in udp_pcb *udp_pcbs -> udp_recv_callback -> udp_sendto -> udp_sendto_if(組裝成udp packet) -> ip4_output_if(組裝成ip packet) -> netif->output(netif, p, dest)
   */
-  if (TUNTAP == 1) {
+  if (!strcmp(ip_mode, "tun")) {
     netif_add(&netif, &ipaddr, &netmask, &gw, NULL, tunif_init, ip_input); // IPV4 IPV6 TODO
   } else {
 #if defined(LWIP_UNIX_LINUX)
@@ -298,7 +299,7 @@ main(int argc, char **argv) {
 }
 
 static void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
-  if (TUNTAP == 1) {
+  if (!strcmp(ip_mode, "tun")) {
     tunif_input(&netif);
   } else {
 #if defined(LWIP_UNIX_LINUX)
