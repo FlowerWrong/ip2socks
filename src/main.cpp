@@ -32,29 +32,35 @@
 static ip4_addr_t ipaddr, netmask, gw;
 
 static char *config_file;
-static char *shell_file;
+static char *onshell_file;
+static char *downshell_file;
+
+void on_shell();
+
+void down_shell();
 
 /* nonstatic debug cmd option, exported in lwipopts.h */
 unsigned char debug_flags;
 
 static struct option longopts[] = {
   /* turn on debugging output (if build with LWIP_DEBUG) */
-  {"debug",  no_argument,       NULL, 'd'},
+  {"debug",     no_argument,       NULL, 'd'},
   /* help */
-  {"help",   no_argument,       NULL, 'h'},
+  {"help",      no_argument,       NULL, 'h'},
   /* config file */
-  {"config", required_argument, NULL, 'c'},
-  /* shell script */
-  {"shell",  required_argument, NULL, 's'},
+  {"config",    required_argument, NULL, 'c'},
+  /* onshell script */
+  {"onshell",   required_argument, NULL, 'o'},
+  /* downshell script */
+  {"downshell", required_argument, NULL, 'n'},
   /* new command line options go here! */
-  {NULL, 0,                     NULL, 0}
+  {NULL, 0,                        NULL, 0}
 };
 #define NUM_OPTS ((sizeof(longopts) / sizeof(struct option)) - 1)
 
 static void
 usage(void) {
   unsigned char i;
-
   printf("options:\n");
   for (i = 0; i < NUM_OPTS; i++) {
     printf("-%c --%s\n", longopts[i].val, longopts[i].name);
@@ -64,10 +70,13 @@ usage(void) {
 #define BUFFER_SIZE 1514
 
 void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
+
 void sigterm_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
+
 void sigint_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
+
 void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
-void sigkill_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
+
 
 struct netif netif;
 
@@ -86,7 +95,7 @@ main(int argc, char **argv) {
   /* use debug flags defined by debug.h */
   debug_flags = LWIP_DBG_OFF;
 
-  while ((ch = getopt_long(argc, argv, "dhg:i:m:t:", longopts, NULL)) != -1) {
+  while ((ch = getopt_long(argc, argv, "dhc:o:n:", longopts, NULL)) != -1) {
     switch (ch) {
       case 'd':
         debug_flags |= (LWIP_DBG_ON | LWIP_DBG_TRACE | LWIP_DBG_STATE | LWIP_DBG_FRESH | LWIP_DBG_HALT);
@@ -97,8 +106,11 @@ main(int argc, char **argv) {
       case 'c':
         config_file = optarg;
             break;
-      case 's':
-        shell_file = optarg;
+      case 'o':
+        onshell_file = optarg;
+            break;
+      case 'n':
+        downshell_file = optarg;
             break;
       default:
         usage();
@@ -113,7 +125,7 @@ main(int argc, char **argv) {
     exit(0);
   }
 
-  printf("config file %s shell file %s\n", config_file, shell_file);
+  printf("config file %s, on shell file %s, down shell file %s\n", config_file, onshell_file, downshell_file);
 
 
   /**
@@ -212,8 +224,6 @@ main(int argc, char **argv) {
   /* Cleanup */
   yaml_parser_delete(&parser);
   fclose(fh);
-
-  printf("%s %s\n", conf->remote_dns_server, conf->ip_mode);
   /**
    * yaml config parser end
    */
@@ -262,7 +272,7 @@ main(int argc, char **argv) {
     ethernet_input -> ip4_input(p, netif)
                                           -> upd_input -> pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src) in udp_pcb *udp_pcbs -> udp_recv_callback -> udp_sendto -> udp_sendto_if(組裝成udp packet) -> ip4_output_if(組裝成ip packet) -> netif->output(netif, p, dest)
   */
-  if (!strcmp(conf->ip_mode, "tun")) {
+  if (strcmp(conf->ip_mode, "tun") == 0) {
     netif_add(&netif, &ipaddr, &netmask, &gw, NULL, tunif_init, ip_input); // IPV4 IPV6 TODO
   } else {
 #if defined(LWIP_UNIX_LINUX)
@@ -281,8 +291,6 @@ main(int argc, char **argv) {
 
   udp_raw_init();
   tcp_raw_init();
-
-  std::cout << "Ip2socks started!" << std::endl;
 
   struct ev_io *tuntap_io = (struct ev_io *) mem_malloc(sizeof(struct ev_io));
 
@@ -308,10 +316,6 @@ main(int argc, char **argv) {
   ev_signal_init(&signal_int_watcher, sigint_cb, SIGINT);
   ev_signal_start(loop, &signal_int_watcher);
 
-  ev_signal signal_kill_watcher;
-  ev_signal_init(&signal_kill_watcher, sigkill_cb, SIGKILL);
-  ev_signal_start(loop, &signal_kill_watcher);
-
   ev_signal signal_usr2_watcher;
   ev_signal_init(&signal_usr2_watcher, sigusr2_cb, SIGUSR2);
   ev_signal_start(loop, &signal_usr2_watcher);
@@ -325,24 +329,72 @@ main(int argc, char **argv) {
   // TODO
   sys_check_timeouts();
 
+  /**
+   * setup shell scripts
+   */
+  on_shell();
+
+  std::cout << "Ip2socks started!" << std::endl;
+
   return ev_run(loop, 0);
+}
+
+void down_shell() {
+  /**
+   * down shell scripts
+   */
+  if (downshell_file != NULL) {
+    std::string sh("sh ");
+    sh.append(downshell_file);
+    sh.append(" ");
+
+    if (strcmp(conf->ip_mode, "tun") == 0) {
+      sh.append(conf->gw);
+    } else {
+      sh.append(conf->addr);
+    }
+
+    printf("exec down shell %s\n", sh.c_str());
+
+    system(sh.c_str());
+  }
+}
+
+void on_shell() {
+  /**
+   * setup shell scripts
+   */
+  if (onshell_file != NULL) {
+    std::string sh("sh ");
+    sh.append(onshell_file);
+    sh.append(" ");
+
+    if (strcmp(conf->ip_mode, "tun") == 0) {
+      sh.append(conf->gw);
+    } else {
+      sh.append(conf->addr);
+    }
+
+    printf("exec setup shell %s\n", sh.c_str());
+
+    system(sh.c_str());
+  }
 }
 
 void sigterm_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
   printf("SIGTERM handler called in process!!!\n");
+  down_shell();
   ev_break(loop, EVBREAK_ALL);
 }
 
 void sigint_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
   printf("SIGINT handler called in process!!!\n");
+  down_shell();
   ev_break(loop, EVBREAK_ALL);
 }
+
 void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
   printf("SIGUSR2 handler called in process!!! TODO reload config.\n");
-}
-void sigkill_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
-  printf("SIGKILL handler called in process!!!\n");
-  ev_break(loop, EVBREAK_ALL);
 }
 
 void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
@@ -353,5 +405,4 @@ void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
     tapif_input(&netif);
 #endif
   }
-  return;
 }

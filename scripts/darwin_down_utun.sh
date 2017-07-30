@@ -11,19 +11,19 @@ echo "origin gateway is '$GATEWAY_IP'"
 if [ -n "$DIRECT_IP_LIST" ]
 then
     for i in $(cat $DIRECT_IP_LIST); do
-        route add -net $i $GATEWAY_IP
+        route delete -net $i $GATEWAY_IP
     done
 fi
 
 # route all flow to tun
-route add -net 128.0.0.0 $TUN_IP -netmask 128.0.0.0
-route add -net 0.0.0.0 $TUN_IP -netmask 128.0.0.0
+route delete -net 128.0.0.0 $TUN_IP -netmask 128.0.0.0
+route delete -net 0.0.0.0 $TUN_IP -netmask 128.0.0.0
 
 # route dns flow to tun, and redirect to tcp dns server
 # TODO just edit it with yours
-route add -host 114.114.114.114 $TUN_IP
-route add -host 223.5.5.5 $TUN_IP
+route delete -host 114.114.114.114 $TUN_IP
+route delete -host 223.5.5.5 $TUN_IP
 
 # remote server
 # TODO just edit it with yours
-route add -host 47.90.32.252 $GATEWAY_IP
+route delete -host 47.90.32.252 $GATEWAY_IP
