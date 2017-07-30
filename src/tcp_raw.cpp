@@ -320,9 +320,6 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     return;
   }
 
-  /**
-   *
-   */
   std::string buf_cpp(buffer, nreads);
   es->socks_buf.append(buf_cpp);
   es->socks_buf_used += nreads;
@@ -332,7 +329,6 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   }
 
   write_and_output(pcb, es);
-  return;
 }
 
 static err_t
@@ -397,6 +393,13 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
 
     ev_io_init(&(es->io), read_cb, socks_fd, EV_READ);
     ev_io_start(EV_DEFAULT, &(es->io));
+
+    /**
+     * enable tcp keepalive
+     */
+    newpcb->so_options |= SOF_KEEPALIVE;
+    newpcb->so_options |= SOF_REUSEADDR;
+    newpcb->keep_intvl = 75000; /* 75 seconds */
 
     /* pass newly allocated es to our callbacks */
     tcp_arg(newpcb, es);

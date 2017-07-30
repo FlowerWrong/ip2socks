@@ -52,13 +52,14 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 ## Know bugs
 
 * [x] too many `CLOSE_WAIT` to socks server, see `netstat -an | grep CLOSE_WAIT | wc -l`
+* [ ] OSX receive data too often, eg: `brew update`, `brew upgrade`
 
 ## TODO
 
 * [ ] fake DNS server
 * [ ] http/https proxy server
-* [ ] lwip `keep-alive` support
-* [ ] lwip `SO_REUSEADDR` support
+* [x] lwip `keep-alive` support
+* [x] lwip `SO_REUSEADDR` support
 * [ ] TCP fast open with Linux kernel > 3.7.0
 * [ ] socks 5 client UDP relay
 * [ ] FreeBSD support

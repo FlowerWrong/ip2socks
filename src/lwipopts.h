@@ -467,6 +467,10 @@
  */
 // #define TCP_MSL 1000UL
 
+#define LWIP_TCP_KEEPALIVE 1
+#define SO_REUSE 1
+#define SO_REUSE_RXTOALL 1
+
 #define TCP_MSS 1460
 #define TCP_WND 0xFFFF
 #define TCP_SND_BUF 65535

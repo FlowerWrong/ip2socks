@@ -61,6 +61,8 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
              const ip_addr_t *addr, u16_t port) {
   LWIP_UNUSED_ARG(arg);
   if (p != NULL) {
+    upcb->so_options |= SO_REUSEADDR;
+
     response *buffer = (response *) malloc(sizeof(response));
     buffer->buffer = static_cast<char *>(malloc(2048));
     char *query;
