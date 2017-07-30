@@ -64,6 +64,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [ ] FreeBSD support
 * [ ] Android support
 * [ ] iOS support
+* [ ] ipv6 support
 
 ## How to remove submodule?
 
