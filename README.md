@@ -1,20 +1,46 @@
 # ip2socks
 
+## Support now
+
+#### OSX
+
+#### Linux
+
+* ubuntu tested
+* archlinux tested
+
 ## Get start
 
 ```bash
+git clone git@github.com:FlowerWrong/ip2socks.git --recursive
+
 git submodule init
 git submodule update
-git submodule foreach git pull
 
-# --recursive
-
-# archlinux
+# ubuntu vm
 vagrant up --provider virtualbox
 vagrant ssh
 ```
 
+#### Compile with C++ 11 and cmake
+
+```bash
+cmake .
+make
+
+# OSX
+sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/darwin_setup_utun.sh --downshell=./scripts/darwin_down_utun.sh
+
+# linux
+sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_setup_tuntap.sh --downshell=./scripts/linux_down_tuntap.sh
+```
+
+#### There are 4 way to setup DNS query with tcp
+
 * `use-vc` in `/etc/resolv.conf`: Sets RES_USEVC in _res.options.  This option forces the use of TCP for DNS resolutions.
+* pdnsd
+* lwip udp hooked, redirect to upstream tcp dns server via socks 5, config with `remote_dns_server`, you can just route your dns servers to tun or tap with `route` on OSX or `ip route` on Linux
+* lwip udp hooked, redirect to upstream tcp dns server via socks 5, config with `remote_dns_server`, setup your dns to `10.0.0.2`
 
 ## Library
 
@@ -23,7 +49,7 @@ vagrant ssh
 * [libev](http://software.schmorp.de/pkg/libev.html)
 * [libyaml](https://github.com/yaml/libyaml)
 
-## Remove submodule
+## How to remove submodule?
 
 ```
 Run git rm --cached <submodule name>
