@@ -119,44 +119,12 @@ static int utun_read(int fd, void *buf, size_t len) {
 #endif /* LWIP_UNIX_MACH */
 
 /*-----------------------------------------------------------------------------------*/
-
-int tun_create(char *dev) {
-  int fd;
-#if defined(LWIP_UNIX_LINUX)
-  struct ifreq ifr;
-  int err;
-  char *clonedev = DEVTUN;
-
-  if ((fd = open(clonedev, O_RDWR)) < 0) {
-    return fd;
-  }
-
-  memset(&ifr, 0, sizeof(ifr));
-  ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
-
-  if ((err = ioctl(fd, TUNSETIFF, (void *) &ifr)) < 0) {
-    close(fd);
-    return err;
-  }
-
-  strcpy(dev, ifr.ifr_name);
-
-  printf("Open tun/tap device: %s for reading...\n", ifr.ifr_name);
-#endif
-
 #if defined(LWIP_UNIX_MACH)
+
+int utun_create(char *dev, u_int32_t unit) {
+  int fd;
   struct ctl_info ctlInfo;
   struct sockaddr_ctl sc;
-  int utunnum;
-
-  if (dev == NULL) {
-    printf("utun device name cannot be null");
-    return -1;
-  }
-  if (sscanf(dev, "utun%d", &utunnum) != 1) {
-    printf("invalid utun device name: %s", dev);
-    return -1;
-  }
 
   memset(&ctlInfo, 0, sizeof(ctlInfo));
   if (strlcpy(ctlInfo.ctl_name, UTUN_CONTROL_NAME, sizeof(ctlInfo.ctl_name)) >=
@@ -182,12 +150,54 @@ int tun_create(char *dev) {
   sc.sc_len = sizeof(sc);
   sc.sc_family = AF_SYSTEM;
   sc.ss_sysaddr = AF_SYS_CONTROL;
-  sc.sc_unit = utunnum + 1;
+  sc.sc_unit = unit + 1;
 
   if (connect(fd, (struct sockaddr *) &sc, sizeof(sc)) == -1) {
     close(fd);
     printf("connect[AF_SYS_CONTROL]");
     return -1;
+  }
+
+  // Get iface name of newly created utun dev.
+  char utunname[20];
+  socklen_t utunname_len = sizeof(utunname);
+  if (getsockopt(fd, SYSPROTO_CONTROL, UTUN_OPT_IFNAME, utunname, &utunname_len))
+    return -1;
+  memcpy(dev, utunname, strlen(utunname));
+  return fd;
+}
+
+#endif /* LWIP_UNIX_MACH */
+
+int tun_create(char *dev) {
+  int fd = -1;
+#if defined(LWIP_UNIX_LINUX)
+  struct ifreq ifr;
+  int err;
+  char *clonedev = DEVTUN;
+
+  if ((fd = open(clonedev, O_RDWR)) < 0) {
+    return fd;
+  }
+
+  memset(&ifr, 0, sizeof(ifr));
+  ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
+
+  if ((err = ioctl(fd, TUNSETIFF, (void *) &ifr)) < 0) {
+    close(fd);
+    return err;
+  }
+
+  strcpy(dev, ifr.ifr_name);
+
+  printf("Open tun/tap device: %s for reading...\n", ifr.ifr_name);
+#endif
+
+#if defined(LWIP_UNIX_MACH)
+  for (u_int32_t unit = 0; unit < 256; ++unit) {
+    fd = utun_create(dev, unit);
+    if (fd >= 0)
+      break;
   }
 #endif /* LWIP_UNIX_MACH */
 
@@ -200,16 +210,14 @@ low_level_init(struct netif *netif) {
   int ret = 0;
   char buf[1024];
 
-  // TODO tun name auto
 #if defined(LWIP_UNIX_MACH)
   char tun_name[16];
-  memcpy(tun_name, "utun7", 5);
 #endif /* LWIP_UNIX_MACH */
 
 #if defined(LWIP_UNIX_LINUX)
   char tun_name[IFNAMSIZ];
-  tun_name[0] = '\0';
 #endif
+  tun_name[0] = '\0';
 
 
   tunif = (struct tunif *) netif->state;
