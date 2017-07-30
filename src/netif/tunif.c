@@ -21,25 +21,25 @@
 #endif
 
 #if defined(LWIP_UNIX_LINUX)
-
 #include <sys/ioctl.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
 #include <fcntl.h>
 
 
-#ifndef DEVTUN_DEFAULT_IF
-#define DEVTUN_DEFAULT_IF "tun0"
-#endif
 #ifndef DEVTUN
 #define DEVTUN "/dev/net/tun"
 #endif
-#define NETMASK_ARGS "netmask %d.%d.%d.%d"
-#define IFCONFIG_ARGS "tun0 inet %d.%d.%d.%d " NETMASK_ARGS
+
+#define IP_ADDR_ARGS "addr add %d.%d.%d.%d/24 dev %s"
+#define IP_UP_ARGS "link set %s up"
+#define IP_BIN "/sbin/ip "
 #elif defined(LWIP_UNIX_OPENBSD)
 #define DEVTUN "/dev/tun0"
-#define NETMASK_ARGS "netmask %d.%d.%d.%d"
-#define IFCONFIG_ARGS "tun0 inet %d.%d.%d.%d " NETMASK_ARGS " link0"
+
+#define IP_ADDR_ARGS "addr add %d.%d.%d.%d/24 dev %s"
+#define IP_UP_ARGS "link set %s up"
+#define IP_BIN "/sbin/ip "
 #endif
 
 #if defined(LWIP_UNIX_MACH)
@@ -50,7 +50,6 @@
 #include <netinet/ip.h>
 #include <sys/kern_event.h>
 #include <sys/ioctl.h>
-
 
 #define IFCONFIG_ARGS "%s %d.%d.%d.%d %d.%d.%d.%d mtu %d netmask %d.%d.%d.%d up"
 
@@ -126,7 +125,7 @@ int tun_create(char *dev) {
 #if defined(LWIP_UNIX_LINUX)
   struct ifreq ifr;
   int err;
-  char *clonedev = "/dev/net/tun";
+  char *clonedev = DEVTUN;
 
   if ((fd = open(clonedev, O_RDWR)) < 0) {
     return fd;
@@ -224,6 +223,8 @@ low_level_init(struct netif *netif) {
     exit(1);
   }
 
+  printf("tun name is %s\n", tun_name);
+
 #if defined(LWIP_UNIX_MACH)
   // ifconfig $intf $local_tun_ip $remote_tun_ip mtu $mtu netmask 255.255.255.0 up
   snprintf(buf, 1024, IFCONFIG_BIN
@@ -245,10 +246,17 @@ low_level_init(struct netif *netif) {
   );
   ret = system(buf);
 #endif /* LWIP_UNIX_MACH */
-
 #if defined(LWIP_UNIX_LINUX)
-  ret = system("ip addr add 10.0.0.1/24 dev tun0");
-  ret = system("ip link set tun0 up");
+  snprintf(buf, 1024, IP_BIN IP_ADDR_ARGS,
+           ip4_addr1(netif_ip4_gw(netif)),
+           ip4_addr2(netif_ip4_gw(netif)),
+           ip4_addr3(netif_ip4_gw(netif)),
+           ip4_addr4(netif_ip4_gw(netif)),
+           tun_name);
+  ret = system(buf);
+  snprintf(buf, 1024, IP_BIN IP_UP_ARGS,
+           tun_name);
+  ret = system(buf);
 #endif
 
   if (ret < 0) {

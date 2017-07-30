@@ -33,8 +33,6 @@ static ip4_addr_t ipaddr, netmask, gw;
 
 static char *config_file;
 static char *shell_file;
-static char *ip_mode;
-
 
 /* nonstatic debug cmd option, exported in lwipopts.h */
 unsigned char debug_flags;
@@ -106,7 +104,7 @@ main(int argc, char **argv) {
   argc -= optind;
   argv += optind;
 
-  if (config_file == nullptr) {
+  if (config_file == NULL) {
     printf("Please provide config file\n");
     exit(0);
   }
@@ -176,19 +174,19 @@ main(int argc, char **argv) {
         printf("scalar %s \n", token.data.scalar.value);
             tk = (char *) token.data.scalar.value;
             if (state == 0) {
-              if (!strcmp(tk, "ip_mode")) {
+              if (strcmp(tk, "ip_mode") == 0) {
                 datap = &conf->ip_mode;
-              } else if (!strcmp(tk, "socks_server")) {
+              } else if (strcmp(tk, "socks_server") == 0) {
                 datap = &conf->socks_server;
-              } else if (!strcmp(tk, "socks_port")) {
+              } else if (strcmp(tk, "socks_port") == 0) {
                 datap = &conf->socks_port;
-              } else if (!strcmp(tk, "remote_dns_server")) {
+              } else if (strcmp(tk, "remote_dns_server") == 0) {
                 datap = &conf->remote_dns_server;
-              } else if (!strcmp(tk, "gw")) {
+              } else if (strcmp(tk, "gw") == 0) {
                 datap = &conf->gw;
-              } else if (!strcmp(tk, "addr")) {
+              } else if (strcmp(tk, "addr") == 0) {
                 datap = &conf->addr;
-              } else if (!strcmp(tk, "netmask")) {
+              } else if (strcmp(tk, "netmask") == 0) {
                 datap = &conf->netmask;
               } else {
                 printf("Unrecognised key: %s\n", tk);
@@ -219,20 +217,18 @@ main(int argc, char **argv) {
   /**
    * if config, overside default value
    */
-  if (conf->gw != nullptr) {
+  if (conf->gw != NULL) {
     ip4addr_aton(conf->gw, &gw);
   }
-  if (conf->addr != nullptr) {
+  if (conf->addr != NULL) {
     ip4addr_aton(conf->addr, &ipaddr);
   }
-  if (conf->netmask != nullptr) {
+  if (conf->netmask != NULL) {
     ip4addr_aton(conf->netmask, &netmask);
   }
 
-  ip_mode = static_cast<char *>(malloc(3));
-  memcpy(ip_mode, "tun", 3);
-  if (conf->ip_mode != nullptr) {
-    memcpy(ip_mode, conf->ip_mode, 3);
+  if (conf->ip_mode == NULL) {
+    memcpy(conf->ip_mode, "tun", 3);
   }
 
 
@@ -255,7 +251,7 @@ main(int argc, char **argv) {
     ethernet_input -> ip4_input(p, netif)
                                           -> upd_input -> pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src) in udp_pcb *udp_pcbs -> udp_recv_callback -> udp_sendto -> udp_sendto_if(組裝成udp packet) -> ip4_output_if(組裝成ip packet) -> netif->output(netif, p, dest)
   */
-  if (!strcmp(ip_mode, "tun")) {
+  if (!strcmp(conf->ip_mode, "tun")) {
     netif_add(&netif, &ipaddr, &netmask, &gw, NULL, tunif_init, ip_input); // IPV4 IPV6 TODO
   } else {
 #if defined(LWIP_UNIX_LINUX)
@@ -298,7 +294,7 @@ main(int argc, char **argv) {
 }
 
 static void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
-  if (!strcmp(ip_mode, "tun")) {
+  if (strcmp(conf->ip_mode, "tun") == 0) {
     tunif_input(&netif);
   } else {
 #if defined(LWIP_UNIX_LINUX)
