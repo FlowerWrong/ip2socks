@@ -63,7 +63,11 @@ usage(void) {
 
 #define BUFFER_SIZE 1514
 
-static void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
+void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
+void sigterm_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
+void sigint_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
+void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
+void sigkill_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
 
 struct netif netif;
 
@@ -291,6 +295,30 @@ main(int argc, char **argv) {
   struct tuntapif *tuntapif;
   tuntapif = (struct tuntapif *) ((&netif)->state);
 
+  /**
+   * signal start
+   */
+  // eg: kill
+  ev_signal signal_term_watcher;
+  ev_signal_init(&signal_term_watcher, sigterm_cb, SIGTERM);
+  ev_signal_start(loop, &signal_term_watcher);
+
+  // eg: ctrl + c
+  ev_signal signal_int_watcher;
+  ev_signal_init(&signal_int_watcher, sigint_cb, SIGINT);
+  ev_signal_start(loop, &signal_int_watcher);
+
+  ev_signal signal_kill_watcher;
+  ev_signal_init(&signal_kill_watcher, sigkill_cb, SIGKILL);
+  ev_signal_start(loop, &signal_kill_watcher);
+
+  ev_signal signal_usr2_watcher;
+  ev_signal_init(&signal_usr2_watcher, sigusr2_cb, SIGUSR2);
+  ev_signal_start(loop, &signal_usr2_watcher);
+  /**
+   * signal end
+   */
+
   ev_io_init(tuntap_io, tuntap_read_cb, tuntapif->fd, EV_READ);
   ev_io_start(loop, tuntap_io);
 
@@ -300,7 +328,24 @@ main(int argc, char **argv) {
   return ev_run(loop, 0);
 }
 
-static void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
+void sigterm_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
+  printf("SIGTERM handler called in process!!!\n");
+  ev_break(loop, EVBREAK_ALL);
+}
+
+void sigint_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
+  printf("SIGINT handler called in process!!!\n");
+  ev_break(loop, EVBREAK_ALL);
+}
+void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
+  printf("SIGUSR2 handler called in process!!! TODO reload config.\n");
+}
+void sigkill_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
+  printf("SIGKILL handler called in process!!!\n");
+  ev_break(loop, EVBREAK_ALL);
+}
+
+void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents) {
   if (strcmp(conf->ip_mode, "tun") == 0) {
     tunif_input(&netif);
   } else {

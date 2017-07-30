@@ -8,7 +8,6 @@ build/
 *.o
 *.a
 /.idea/
-/cmake-build-debug/
 *.iml
 
 *.out
@@ -16,6 +15,7 @@ build/
 
 *.log
 
+# debug
 vgcore*
 ip2socks.dSYM/
 
@@ -33,6 +33,7 @@ cmake_install.cmake
 install_manifest.txt
 compile_commands.json
 CTestTestfile.cmake
+/cmake-build-debug/
 
 # libev
 /libev/.deps/
@@ -45,6 +46,5 @@ CTestTestfile.cmake
 /libev/*.la
 /libev/*.lo
 
-# socks5
-!/examples/socks5/Makefile
-/examples/socks5/bin/
+# config file
+config.yml
