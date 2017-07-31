@@ -28,7 +28,7 @@
 #include "udp_raw.h"
 #include "tcp_raw.h"
 
-/* (manual) host IP configuration */
+/* lwip host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
 
 static char *config_file;
@@ -262,16 +262,6 @@ main(int argc, char **argv) {
   /* lwip/src/core/init.c */
   lwip_init();
 
-  /*
-    netif_add lwip/core/netif.c
-    tapif_init port/netif/tapif.c -> netif->output = etharp_output and netif->linkoutput = low_level_output
-    ethernet_input lwip/src/netif/ethernet.c
-    ethernet_output lwip/src/netif/ethernet.c Send an ethernet packet on the network using netif->linkoutput()
-    ip4_input lwip/core/ipv4/ip4.c
-                                          -> tcp_input(p, inp)
-    ethernet_input -> ip4_input(p, netif)
-                                          -> upd_input -> pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src) in udp_pcb *udp_pcbs -> udp_recv_callback -> udp_sendto -> udp_sendto_if(組裝成udp packet) -> ip4_output_if(組裝成ip packet) -> netif->output(netif, p, dest)
-  */
   if (strcmp(conf->ip_mode, "tun") == 0) {
     netif_add(&netif, &ipaddr, &netmask, &gw, NULL, tunif_init, ip_input); // IPV4 IPV6 TODO
   } else {
@@ -280,9 +270,7 @@ main(int argc, char **argv) {
 #endif
   }
   netif_set_default(&netif);
-
   netif_set_link_up(&netif);
-
   /* lwip/core/netif.c */
   netif_set_up(&netif);
 #if LWIP_IPV6
@@ -293,7 +281,6 @@ main(int argc, char **argv) {
   tcp_raw_init();
 
   struct ev_io *tuntap_io = (struct ev_io *) mem_malloc(sizeof(struct ev_io));
-
   if (tuntap_io == NULL) {
     printf("tuntap_io: out of memory for tuntap_io\n");
     return -1;

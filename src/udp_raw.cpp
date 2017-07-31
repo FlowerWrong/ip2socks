@@ -73,7 +73,6 @@ int udp_relay(void *query, response *buffer, int len) {
 
   /**
    * socks 5 request start
-   * https://github.com/curl/curl/blob/ce2c3ebda20919fe636e675f219ae387e386f508/lib/socks.c#L353
    */
   unsigned char socksreq[600];
   int idx;
@@ -237,17 +236,6 @@ udp_raw_init(void) {
     err = udp_bind(udp_raw_pcb, &ipaddr, 53);
 //    err = udp_bind(udp_raw_pcb, IP_ANY_TYPE, 53);
     if (err == ERR_OK) {
-      /**
-       * lwip/src/core/udp.c
-       * @ingroup udp_raw
-       * Set a receive callback for a UDP PCB
-       *
-       * This callback will be called when receiving a datagram for the pcb.
-       *
-       * @param pcb the pcb for which to set the recv callback
-       * @param recv function pointer of the callback function
-       * @param recv_arg additional argument to pass to the callback function
-       */
       udp_recv(udp_raw_pcb, udp_raw_recv, NULL);
     } else {
       /* abort? output diagnostic? */
