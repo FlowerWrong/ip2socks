@@ -29,7 +29,7 @@ int tcp_dns_query(void *query, response *buffer, int len) {
     return -1;
   }
 
-  int ret = socks5_auth(sock, conf->remote_dns_server, "53", '1', 1);
+  int ret = socks5_auth(sock, conf->remote_dns_server, "53", 0x01, 1);
   if (ret < 0) {
     printf("socks5 auth failed\n");
     return -1;

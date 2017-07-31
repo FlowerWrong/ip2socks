@@ -76,7 +76,6 @@ int socks5_auth(int sockfd, const char *server_host, const char *server_port, u_
 
   /**
    * socks 5 request start
-   * https://github.com/curl/curl/blob/ce2c3ebda20919fe636e675f219ae387e386f508/lib/socks.c#L353
    */
   if (atype == 1) {
     unsigned char socksreq[600];
