@@ -50,7 +50,7 @@ int socks5_connect(const char *proxy_host, const char *proxy_port) {
   return socks_fd;
 }
 
-int socks5_auth(int sockfd, const char *server_host, const char *server_port, int atype) {
+int socks5_auth(int sockfd, const char *server_host, const char *server_port, u_char cmd, int atype) {
   char buff[BUFFER_SIZE];
   /**
    * socks 5 method request start
@@ -84,7 +84,7 @@ int socks5_auth(int sockfd, const char *server_host, const char *server_port, in
 
     idx = 0;
     socksreq[idx++] = 5; /* version */
-    socksreq[idx++] = 1;
+    socksreq[idx++] = cmd;
     socksreq[idx++] = 0;
     socksreq[idx++] = 1; /* ATYP: IPv4 = 1 */
 
@@ -103,7 +103,7 @@ int socks5_auth(int sockfd, const char *server_host, const char *server_port, in
     free(saddr_in);
   } else if (atype == 3) {
     char *buffer, *temp;
-    u_char v = 0x05, cmd = 0x01, rsv = 0x00, atyp = 0x03;
+    u_char v = 0x05, rsv = 0x00, atyp = 0x03;
 
     const char host_len = (char) strlen(server_host);
     uint16_t port = htons(atoi(server_port));

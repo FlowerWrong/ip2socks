@@ -29,7 +29,7 @@ int tcp_dns_query(void *query, response *buffer, int len) {
     return -1;
   }
 
-  int ret = socks5_auth(sock, conf->remote_dns_server, "53", 1);
+  int ret = socks5_auth(sock, conf->remote_dns_server, "53", '1', 1);
   if (ret < 0) {
     printf("socks5 auth failed\n");
     return -1;
@@ -42,92 +42,140 @@ int tcp_dns_query(void *query, response *buffer, int len) {
 }
 
 int udp_relay(void *query, response *buffer, int len) {
-  int socks_fd = 0;
-  struct sockaddr_in socks_proxy_addr;
-  int nread;
-  char buf[4096];
-
-  socks_proxy_addr.sin_family = AF_INET;
-  socks_proxy_addr.sin_addr.s_addr = inet_addr(conf->socks_server);
-  socks_proxy_addr.sin_port = htons(atoi(conf->socks_port));
-
-  if ((socks_fd = socket(AF_INET, SOCK_DGRAM, 0)) < 0) {
-    printf("socket failed\n");
+  int socks_fd = socks5_connect(conf->socks_server, conf->socks_port);
+  if (socks_fd < 1) {
+    printf("socks5 connect failed\n");
     return -1;
   }
 
+  char buff[BUFFER_SIZE];
   /**
    * socks 5 method request start
    */
-  ((socks5_method_req_t *) buf)->ver = SOCKS5_VERSION;
-  ((socks5_method_req_t *) buf)->nmethods = 0x01;
-  ((socks5_method_req_t *) buf)->methods[0] = 0x00;
-  nread = sendto(socks_fd, buf, 3, 0, reinterpret_cast<const sockaddr *>(&socks_proxy_addr),
-                 sizeof(socks_proxy_addr));
-  if (nread < 0) {
-    printf("udp socks 5 method request sendto failed\n");
+  ((socks5_method_req_t *) buff)->ver = SOCKS5_VERSION;
+  ((socks5_method_req_t *) buff)->nmethods = 0x01;
+  ((socks5_method_req_t *) buff)->methods[0] = 0x00;
+
+  send(socks_fd, buff, 3, 0);
+
+  // VERSION and METHODS
+  if (-1 == recv(socks_fd, buff, 2, 0)) {
+    printf("recv VERSION and METHODS error\n");
+    return -1;
+  };
+  if (SOCKS5_VERSION != ((socks5_method_res_t *) buff)->ver || 0x00 != ((socks5_method_res_t *) buff)->method) {
+    printf("socks5_method_res_t error\n");
     return -1;
   }
-  nread = recvfrom(socks_fd, buf, 2, 0, reinterpret_cast<sockaddr *>(&socks_proxy_addr),
-                   reinterpret_cast<socklen_t *>(sizeof(socks_proxy_addr)));
-  if (nread < 0) {
-    printf("udp socks 5 method request recvfrom failed\n");
+  /**
+   * socks 5 method request end
+   */
+
+  /**
+   * socks 5 request start
+   * https://github.com/curl/curl/blob/ce2c3ebda20919fe636e675f219ae387e386f508/lib/socks.c#L353
+   */
+  unsigned char socksreq[600];
+  int idx;
+
+  idx = 0;
+  socksreq[idx++] = 5; /* version */
+  socksreq[idx++] = 3; /* udp */
+  socksreq[idx++] = 0;
+  socksreq[idx++] = 1; /* ATYP: IPv4 = 1 */
+
+  struct sockaddr_in *saddr_in = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));;
+  saddr_in->sin_family = AF_INET;
+  inet_aton(conf->remote_dns_server, &(saddr_in->sin_addr));
+  for (int i = 0; i < 4; i++) {
+    socksreq[idx++] = ((unsigned char *) &saddr_in->sin_addr.s_addr)[i];
+  }
+
+  int p = atoi(conf->socks_port);
+  socksreq[idx++] = (unsigned char) ((p >> 8) & 0xff); /* PORT MSB */
+  socksreq[idx++] = (unsigned char) (p & 0xff);        /* PORT LSB */
+
+  send(socks_fd, (char *) socksreq, idx, 0);
+  free(saddr_in);
+
+  /**
+   * socks 5 request end
+   */
+
+  /**
+   * socks 5 response
+   */
+  if (-1 == recv(socks_fd, buff, 10, 0)) {
+    printf("recv socks 5 response error\n");
+    return -1;
+  };
+
+  if (SOCKS5_VERSION != ((socks5_response_t *) buff)->ver) {
+    printf("socks 5 response version error\n");
     return -1;
   }
 
-  {
-    unsigned char socksreq[600];
-    int idx;
+  char *udp_ip_str = inet_ntoa(*(in_addr *) (&buff[4]));
+  int udp_port = ntohs(*(short *) (&buff[8]));
+  printf("udp %s:%d\n", udp_ip_str, udp_port);
 
-    idx = 0;
-    socksreq[idx++] = 5; /* version */
-    socksreq[idx++] = 3; /* udp */
-    socksreq[idx++] = 0;
-    socksreq[idx++] = 1; /* ATYP: IPv4 = 1 */
+  struct sockaddr_in socks_proxy_addr;
 
-    struct sockaddr_in *saddr_in = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));;
-    saddr_in->sin_family = AF_INET;
-    inet_aton(conf->remote_dns_server, &(saddr_in->sin_addr));
-    for (int i = 0; i < 4; i++) {
-      socksreq[idx++] = ((unsigned char *) &saddr_in->sin_addr.s_addr)[i];
-    }
+  socks_proxy_addr.sin_family = AF_INET;
+  socks_proxy_addr.sin_addr.s_addr = inet_addr(udp_ip_str);
+  socks_proxy_addr.sin_port = htons(udp_port);
 
-    int p = atoi("53");
-    socksreq[idx++] = (unsigned char) ((p >> 8) & 0xff); /* PORT MSB */
-    socksreq[idx++] = (unsigned char) (p & 0xff);        /* PORT LSB */
 
-    nread = sendto(socks_fd, socksreq, idx, 0, reinterpret_cast<const sockaddr *>(&socks_proxy_addr),
-                   sizeof(socks_proxy_addr));
-    if (nread < 0) {
-      printf("udp socks 5 request sendto failed\n");
-      return -1;
-    }
-    free(saddr_in);
+  // TODO
+  unsigned char udp_req[4096];
+  int udp_index;
 
-    nread = recvfrom(socks_fd, buf, 10, 0, reinterpret_cast<sockaddr *>(&socks_proxy_addr),
-                     reinterpret_cast<socklen_t *>(sizeof(socks_proxy_addr)));
-    if (nread < 0) {
-      printf("udp socks 5 response recvfrom failed\n");
-      return -1;
-    }
+  udp_index = 0;
+  udp_req[udp_index++] = 0; /* RSV */
+  udp_req[udp_index++] = 0; /* RSV */
+  udp_req[udp_index++] = 0; /* FRAG */
+  udp_req[udp_index++] = 1; /* ATYP: IPv4 = 1 */
+
+  struct sockaddr_in *udp_saddr_in = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));;
+  udp_saddr_in->sin_family = AF_INET;
+  inet_aton(conf->remote_dns_server, &(udp_saddr_in->sin_addr));
+  for (int i = 0; i < 4; i++) {
+    udp_req[udp_index++] = ((unsigned char *) &udp_saddr_in->sin_addr.s_addr)[i];
   }
 
+  p = 53;
+  udp_req[udp_index++] = (unsigned char) ((p >> 8) & 0xff); /* PORT MSB */
+  udp_req[udp_index++] = (unsigned char) (p & 0xff);        /* PORT LSB */
 
-  nread = sendto(socks_fd, query, len, 0, reinterpret_cast<const sockaddr *>(&socks_proxy_addr),
-                 sizeof(socks_proxy_addr));
+  memcpy(udp_req + udp_index, query, len);
+
+  int udp_relay_fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+  sockaddr_in localAddr;
+  memset(&localAddr, 0, sizeof(localAddr));
+  localAddr.sin_family = AF_INET;
+  localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+  localAddr.sin_port = htons(50000);
+  if (bind(udp_relay_fd, (struct sockaddr *) &localAddr, sizeof(localAddr))) {
+
+  }
+
+  int nread = sendto(udp_relay_fd, udp_req, len + udp_index, 0, (struct sockaddr *) (&socks_proxy_addr),
+                     sizeof(socks_proxy_addr));
   if (nread < 0) {
     printf("udp query sendto failed\n");
     return -1;
   }
 
-  buffer->length = recvfrom(socks_fd, buffer->buffer, 4096, 0, reinterpret_cast<sockaddr *>(&socks_proxy_addr),
+  buffer->length = recvfrom(udp_relay_fd, buffer->buffer, 4096, 0, (struct sockaddr *) (&socks_proxy_addr),
                             reinterpret_cast<socklen_t *>(sizeof(socks_proxy_addr)));
   if (buffer->length < 0) {
     printf("udp data recvfrom failed\n");
     return -1;
   }
+  printf("recv buffer->length %d\n", buffer->length);
 
-  return socks_fd;
+  return udp_relay_fd;
 }
 
 /**

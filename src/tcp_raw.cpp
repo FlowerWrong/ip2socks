@@ -371,7 +371,7 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
   char port[64];
   sprintf(port, "%d", newpcb->local_port);
 
-  int ret = socks5_auth(socks_fd, localip_str, port, 1);
+  int ret = socks5_auth(socks_fd, localip_str, port, '1', 1);
   if (ret < 0) {
     printf("socks5 auth error\n");
     return -1;

@@ -52,7 +52,7 @@ int32_t socks5_sockset(int sockfd);
 
 int socks5_connect(const char *proxy_host, const char *proxy_port);
 
-int socks5_auth(int sockfd, const char *server_host, const char *server_port, int atype);
+int socks5_auth(int sockfd, const char *server_host, const char *server_port, u_char cmd, int atype);
 
 
 #endif //LWIP_SOCKS5_H
