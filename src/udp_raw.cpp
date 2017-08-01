@@ -158,21 +158,26 @@ int udp_relay(void *query, response *buffer, int len) {
   if (bind(udp_relay_fd, (struct sockaddr *) &localAddr, sizeof(localAddr))) {
 
   }
-
+  int addr_len = sizeof(sockaddr_in);
   int nread = sendto(udp_relay_fd, udp_req, len + udp_index, 0, (struct sockaddr *) (&socks_proxy_addr),
-                     sizeof(socks_proxy_addr));
+                     addr_len);
   if (nread < 0) {
     printf("udp query sendto failed\n");
     return -1;
   }
   printf("sendto success\n");
 
-  buffer->length = recvfrom(udp_relay_fd, buffer->buffer, 4096, 0, (struct sockaddr *) (&socks_proxy_addr),
-                            reinterpret_cast<socklen_t *>(sizeof(socks_proxy_addr)));
-  if (buffer->length < 0) {
+
+  nread = recvfrom(udp_relay_fd, buff, 4096, 0, (struct sockaddr *) (&socks_proxy_addr),
+                            reinterpret_cast<socklen_t *>(&addr_len));
+  if (nread < 0) {
     printf("udp data recvfrom failed\n");
     return -1;
   }
+
+  buffer->length = nread - 10;
+  memcpy(buffer->buffer, buff + 10, buffer->length);
+
   printf("recv buffer->length %d\n", buffer->length);
 
   return udp_relay_fd;
@@ -199,24 +204,27 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
      * forward udp dns packet to the tcp dns server vis socks 5
      * the tcp query requires the length to precede the packet, so we put the length there
      */
-    char *query;
-    query = static_cast<char *>(malloc(p->len + 3));
-    query[0] = 0;
-    query[1] = (char) p->len;
-    memcpy(query + 2, buffer->buffer, p->len);
-    int socks_fd = tcp_dns_query(query, buffer, p->len + 2);
-    free(query);
+//    char *query;
+//    query = static_cast<char *>(malloc(p->len + 3));
+//    query[0] = 0;
+//    query[1] = (char) p->len;
+//    memcpy(query + 2, buffer->buffer, p->len);
+//    int socks_fd = tcp_dns_query(query, buffer, p->len + 2);
+//    free(query);
     /**
      * tcp mode end
      */
 
     // udp mode
-    // int socks_fd = udp_relay(buffer->buffer, buffer, p->len);
+    int socks_fd = udp_relay(buffer->buffer, buffer, p->len);
 
     if (buffer->length > 0) {
       /* send received packet back to sender */
-      struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length - 2, PBUF_RAM);
-      memcpy(socksp->payload, buffer->buffer + 2, (size_t) buffer->length - 2);
+//      struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length - 2, PBUF_RAM);
+//      memcpy(socksp->payload, buffer->buffer + 2, (size_t) buffer->length - 2);
+
+      struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length, PBUF_RAM);
+      memcpy(socksp->payload, buffer->buffer, (size_t) buffer->length);
 
       udp_sendto(upcb, socksp, addr, port);
       /* free the pbuf */

@@ -56,6 +56,8 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 
 ## TODO
 
+* [ ] timeout
+* [ ] log
 * [ ] fake DNS server
 * [ ] http/https proxy server
 * [x] lwip `keep-alive` support

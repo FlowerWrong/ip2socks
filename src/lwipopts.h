@@ -424,7 +424,7 @@
 // #define IP_REASS_DEBUG   LWIP_DBG_ON
 // #define RAW_DEBUG        LWIP_DBG_ON
 // #define ICMP_DEBUG       LWIP_DBG_ON
-// #define UDP_DEBUG        LWIP_DBG_ON
+#define UDP_DEBUG        LWIP_DBG_ON
 // #define TCP_DEBUG        LWIP_DBG_ON
 // #define TCP_INPUT_DEBUG  LWIP_DBG_ON
 // #define TCP_OUTPUT_DEBUG LWIP_DBG_ON
@@ -444,7 +444,7 @@
 #define LWIP_HOOK_IP4_NETIF(iphdr) netif_list
 #define LWIP_HOOK_IP6_NETIF(ip6hdr) netif_list
 #define LWIP_HOOK_TCP_LISTEN_PCB(tcphdr) tcp_listen_pcbs.listen_pcbs
-#define LWIP_HOOK_UDP_LISTEN_PCB 1
+// #define LWIP_HOOK_UDP_LISTEN_PCB 1
 /* hook config end */
 
 
