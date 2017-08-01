@@ -7,6 +7,7 @@
 
 struct Conf {
     char *ip_mode;
+    char *dns_mode;
     char *socks_server;
     char *socks_port;
     char *remote_dns_server;

@@ -192,6 +192,8 @@ main(int argc, char **argv) {
             if (state == 0) {
               if (strcmp(tk, "ip_mode") == 0) {
                 datap = &conf->ip_mode;
+              } else if (strcmp(tk, "dns_mode") == 0) {
+                datap = &conf->dns_mode;
               } else if (strcmp(tk, "socks_server") == 0) {
                 datap = &conf->socks_server;
               } else if (strcmp(tk, "socks_port") == 0) {
@@ -250,6 +252,9 @@ main(int argc, char **argv) {
       exit(0);
     }
 #endif /* LWIP_UNIX_MACH */
+  }
+  if (conf->dns_mode == NULL) {
+    memcpy(conf->dns_mode, "tcp", 3);
   }
 
 

@@ -35,6 +35,16 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/darwin
 sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_setup_tuntap.sh --downshell=./scripts/linux_down_tuntap.sh
 ```
 
+#### ip mode
+
+* tun or utun
+* tap
+
+#### dns mode
+
+* tcp: just dns with port 53 redirect to tcp, other flow will be try to send to remote via socks 5 udp tunnel
+* udp: all flow will be send to remote via socks 5 udp tunnel, does not support setup your dns to `addr`
+
 #### There are 4 way to setup DNS query with tcp
 
 * `use-vc` in `/etc/resolv.conf`: Sets RES_USEVC in _res.options.  This option forces the use of TCP for DNS resolutions.
