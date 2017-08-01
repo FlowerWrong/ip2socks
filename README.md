@@ -73,7 +73,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [x] lwip `keep-alive` support
 * [x] lwip `SO_REUSEADDR` support
 * [ ] TCP fast open with Linux kernel > 3.7.0
-* [ ] socks 5 client UDP relay
+* [x] socks 5 client UDP relay
 * [ ] FreeBSD support
 * [ ] Android support
 * [ ] iOS support
