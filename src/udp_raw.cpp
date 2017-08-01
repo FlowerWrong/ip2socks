@@ -165,6 +165,7 @@ int udp_relay(void *query, response *buffer, int len) {
     printf("udp query sendto failed\n");
     return -1;
   }
+  printf("sendto success\n");
 
   buffer->length = recvfrom(udp_relay_fd, buffer->buffer, 4096, 0, (struct sockaddr *) (&socks_proxy_addr),
                             reinterpret_cast<socklen_t *>(sizeof(socks_proxy_addr)));
@@ -190,18 +191,27 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     response *buffer = (response *) malloc(sizeof(response));
     buffer->buffer = static_cast<char *>(malloc(2048));
-    char *query;
 
     pbuf_copy_partial(p, buffer->buffer, p->tot_len, 0);
-
+    // TODO is DNS
+    /**
+     * tcp mode
+     * forward udp dns packet to the tcp dns server vis socks 5
+     * the tcp query requires the length to precede the packet, so we put the length there
+     */
+    char *query;
     query = static_cast<char *>(malloc(p->len + 3));
     query[0] = 0;
     query[1] = (char) p->len;
     memcpy(query + 2, buffer->buffer, p->len);
-
-    // forward the packet to the tcp dns server
     int socks_fd = tcp_dns_query(query, buffer, p->len + 2);
-    // int socks_fd = udp_relay(query, buffer, p->len + 2);
+    free(query);
+    /**
+     * tcp mode end
+     */
+
+    // udp mode
+    // int socks_fd = udp_relay(buffer->buffer, buffer, p->len);
 
     if (buffer->length > 0) {
       /* send received packet back to sender */
@@ -218,7 +228,6 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     free(buffer->buffer);
     free(buffer);
-    free(query);
     pbuf_free(p);
   }
 }
