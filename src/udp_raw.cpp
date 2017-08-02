@@ -5,11 +5,15 @@
 #include <arpa/inet.h>
 #include <memory.h>
 #include <time.h>
+
 #include <ev.h>
-#include <dns/dump_dns.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 #include "lwip/ip.h"
+
+#if defined(LWIP_UNIX_LINUX)
+#include "dns/dump_dns.h"
+#endif
 
 #include "udp_raw.h"
 #include "struct.h"
@@ -147,7 +151,9 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     printf("dns opcode is %x\n", dns->opcode);
     printf("dns qr is %x\n", dns->qr);
 
+#if defined(LWIP_UNIX_LINUX)
     dump_dns(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr, "\\\n\t");
+#endif
 
 
 

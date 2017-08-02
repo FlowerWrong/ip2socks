@@ -32,7 +32,6 @@ include_directories(
 
     src
     src/netif
-    src/dns
 )
 
 
@@ -45,8 +44,6 @@ set(MAIN_SOURCE_FILES
 
     ${LIBEVDIR}/ev.c
     
-    src/dns/dump_dns.c
-    
     src/struct.cpp
     src/socks5.cpp
     src/tcp_raw.cpp
@@ -55,10 +52,15 @@ set(MAIN_SOURCE_FILES
     )
 
 if (UNIX AND NOT APPLE)
+    include_directories(
+        src/dns
+    )
     set(MAIN_SOURCE_FILES
         ${MAIN_SOURCE_FILES}
         # patch files
         src/netif/tapif.c
+
+        src/dns/dump_dns.c
         )
 endif ()
 
@@ -66,4 +68,7 @@ add_executable(ip2socks ${MAIN_SOURCE_FILES})
 
 target_link_libraries(ip2socks yaml)
 target_link_libraries(ip2socks rdns)
+
+if (UNIX AND NOT APPLE)
 target_link_libraries(ip2socks resolv)
+endif ()
