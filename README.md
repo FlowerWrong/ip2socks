@@ -70,6 +70,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [ ] log
 * [ ] fake DNS server
 * [ ] http/https proxy server
+* [ ] OSX route batch insert
 * [x] lwip `keep-alive` support
 * [x] lwip `SO_REUSEADDR` support
 * [ ] TCP fast open with Linux kernel > 3.7.0
