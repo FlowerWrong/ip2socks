@@ -7,3 +7,6 @@
 [submodule "libyaml"]
 	path = libyaml
 	url = git@github.com:yaml/libyaml.git
+[submodule "scripts/dnsmasq-china-list"]
+	path = scripts/dnsmasq-china-list
+	url = git@github.com:felixonmars/dnsmasq-china-list.git
