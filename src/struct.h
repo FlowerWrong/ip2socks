@@ -11,6 +11,8 @@ struct Conf {
     char *socks_server;
     char *socks_port;
     char *remote_dns_server;
+    char *remote_dns_port;
+    char *local_dns_port;
     char *gw;
     char *addr;
     char *netmask;

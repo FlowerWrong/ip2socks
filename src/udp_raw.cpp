@@ -64,6 +64,7 @@ int tcp_dns_query(void *query, response *buffer, int len, u16_t dns_port) {
 
 // This callback is called when data is readable on the UDP socket.
 static void udp_cb(EV_P_ ev_io *watcher, int revents) {
+  printf("udp callback received\n");
   struct udp_raw_state *es = container_of(watcher, struct udp_raw_state, io);
   char buff[BUFFER_SIZE];
   ssize_t nread = recvfrom(watcher->fd, buff, BUFFER_SIZE, 0, (struct sockaddr *) (&(es->addr)),
@@ -134,8 +135,10 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       free(buffer);
       free(query);
       pbuf_free(p);
-      return;
+    } else {
+      printf("tcp dns query failed, len is %ld\n", buffer->length);
     }
+    return;
   }
 
   printf("Redirect udp to remote via socks 5\n");
@@ -184,27 +187,38 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   /**
    * socks 5 request start
    */
-  unsigned char socksreq[600];
-  int idx;
-
-  idx = 0;
-  socksreq[idx++] = 5; /* version */
-  socksreq[idx++] = 3; /* udp */
-  socksreq[idx++] = 0;
-  socksreq[idx++] = 1; /* ATYP: IPv4 = 1 */
+  size_t idx = 0;
+  buff[idx++] = 5; /* version */
+  buff[idx++] = 3; /* udp */
+  buff[idx++] = 0;
+  buff[idx++] = 1; /* ATYP: IPv4 = 1 */
 
   struct sockaddr_in *saddr_in = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));;
   saddr_in->sin_family = AF_INET;
-  inet_aton(conf->remote_dns_server, &(saddr_in->sin_addr));
+
+  char remote_fake_ip_str[INET_ADDRSTRLEN];
+  inet_ntop(AF_INET, &(upcb->remote_fake_ip), remote_fake_ip_str, INET_ADDRSTRLEN);
+
+  if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
+    inet_aton(conf->remote_dns_server, &(saddr_in->sin_addr));
+    printf("Use remote dns server\n");
+  } else {
+    inet_aton(remote_fake_ip_str, &(saddr_in->sin_addr));
+  }
   for (int i = 0; i < 4; i++) {
-    socksreq[idx++] = ((unsigned char *) &saddr_in->sin_addr.s_addr)[i];
+    buff[idx++] = ((unsigned char *) &saddr_in->sin_addr.s_addr)[i];
   }
 
-  int pport = atoi(conf->socks_port);
-  socksreq[idx++] = (unsigned char) ((pport >> 8) & 0xff); /* PORT MSB */
-  socksreq[idx++] = (unsigned char) (pport & 0xff);        /* PORT LSB */
+  int pport = 0;
+  if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
+    pport = atoi(conf->remote_dns_port);
+  } else {
+    pport = upcb->remote_fake_port;
+  }
+  buff[idx++] = (unsigned char) ((pport >> 8) & 0xff); /* PORT MSB */
+  buff[idx++] = (unsigned char) (pport & 0xff);        /* PORT LSB */
 
-  send(socks_fd, (char *) socksreq, idx, 0);
+  send(socks_fd, (char *) buff, idx, 0);
   free(saddr_in);
   /**
    * socks 5 request end
@@ -230,30 +244,31 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   socks_proxy_addr.sin_addr.s_addr = inet_addr(udp_ip_str);
   socks_proxy_addr.sin_port = htons(udp_port);
 
-
-  unsigned char udp_req[BUFFER_SIZE];
-  int udp_index;
-
-  udp_index = 0;
-  udp_req[udp_index++] = 0; /* RSV */
-  udp_req[udp_index++] = 0; /* RSV */
-  udp_req[udp_index++] = 0; /* FRAG */
-  udp_req[udp_index++] = 1; /* ATYP: IPv4 = 1 */
+  idx = 0;
+  buff[idx++] = 0; /* RSV */
+  buff[idx++] = 0; /* RSV */
+  buff[idx++] = 0; /* FRAG */
+  buff[idx++] = 1; /* ATYP: IPv4 = 1 */
 
   struct sockaddr_in *udp_saddr_in = (struct sockaddr_in *) malloc(sizeof(struct sockaddr_in));;
   udp_saddr_in->sin_family = AF_INET;
-  char remote_fake_ip_str[INET_ADDRSTRLEN];
-  inet_ntop(AF_INET, &(upcb->remote_fake_ip), remote_fake_ip_str, INET_ADDRSTRLEN);
-  inet_aton(remote_fake_ip_str, &(udp_saddr_in->sin_addr));
-  for (int i = 0; i < 4; i++) {
-    udp_req[udp_index++] = ((unsigned char *) &udp_saddr_in->sin_addr.s_addr)[i];
+  if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
+    inet_aton(conf->remote_dns_server, &(udp_saddr_in->sin_addr));
+  } else {
+    inet_aton(remote_fake_ip_str, &(udp_saddr_in->sin_addr));
   }
+  for (int i = 0; i < 4; i++) {
+    buff[idx++] = ((unsigned char *) &udp_saddr_in->sin_addr.s_addr)[i];
+  }
+  if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
+    pport = atoi(conf->remote_dns_port);
+  } else {
+    pport = upcb->remote_fake_port;
+  }
+  buff[idx++] = (unsigned char) ((pport >> 8) & 0xff); /* PORT MSB */
+  buff[idx++] = (unsigned char) (pport & 0xff);        /* PORT LSB */
 
-  pport = upcb->remote_fake_port;
-  udp_req[udp_index++] = (unsigned char) ((pport >> 8) & 0xff); /* PORT MSB */
-  udp_req[udp_index++] = (unsigned char) (pport & 0xff);        /* PORT LSB */
-
-  memcpy(udp_req + udp_index, buf, p->tot_len);
+  memcpy(buff + idx, buf, p->tot_len);
 
   int udp_relay_fd = socket(AF_INET, SOCK_DGRAM, 0);
 
@@ -263,12 +278,12 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
   localAddr.sin_port = htons(0);
   if (bind(udp_relay_fd, (struct sockaddr *) &localAddr, sizeof(localAddr)) < 0) {
-    printf("bind failed\n");
+    printf("bind udp relay failed\n");
     return;
   }
   int addr_len = sizeof(sockaddr_in);
-  ssize_t nread = sendto(udp_relay_fd, udp_req, p->tot_len + udp_index, 0, (struct sockaddr *) (&socks_proxy_addr),
-                         addr_len);
+  ssize_t nread = sendto(udp_relay_fd, buff, p->tot_len + idx, 0, (struct sockaddr *) (&socks_proxy_addr),
+                         static_cast<socklen_t>(addr_len));
   if (nread < 0) {
     printf("udp query sendto failed\n");
     return;
@@ -294,7 +309,7 @@ udp_raw_init(void) {
     ip4_addr_t ipaddr;
     ip4addr_aton(conf->addr, &ipaddr);
     // IP_ANY_TYPE
-    err = udp_bind(udp_raw_pcb, &ipaddr, 0);
+    err = udp_bind(udp_raw_pcb, &ipaddr, 53);
     if (err == ERR_OK) {
       udp_recv(udp_raw_pcb, udp_raw_recv, NULL);
     } else {

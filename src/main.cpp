@@ -200,6 +200,10 @@ main(int argc, char **argv) {
                 datap = &conf->socks_port;
               } else if (strcmp(tk, "remote_dns_server") == 0) {
                 datap = &conf->remote_dns_server;
+              } else if (strcmp(tk, "remote_dns_port") == 0) {
+                datap = &conf->remote_dns_port;
+              } else if (strcmp(tk, "local_dns_port") == 0) {
+                datap = &conf->local_dns_port;
               } else if (strcmp(tk, "gw") == 0) {
                 datap = &conf->gw;
               } else if (strcmp(tk, "addr") == 0) {
