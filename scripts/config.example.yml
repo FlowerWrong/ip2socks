@@ -1,5 +1,5 @@
 ip_mode: tun # tun or tap, default tun
-dns_mode: udp # tcp or udp, default tcp
+dns_mode: tcp # tcp or udp, default tcp
 socks_server: 127.0.0.1
 socks_port: 1080
 remote_dns_server: 8.8.8.8
