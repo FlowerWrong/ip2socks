@@ -42,15 +42,16 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 
 #### dns mode
 
-* tcp: just dns with port 53 redirect to tcp, other flow will be try to send to remote via socks 5 udp tunnel
-* udp: all flow will be send to remote via socks 5 udp tunnel, does not support setup your dns to `addr`
+* tcp: just dns with port you set `local_dns_port` redirect to tcp, other flow will be try to send to remote via socks 5 udp tunnel
+* udp: just dns with port you set `local_dns_port` redirect to udp, other flow will be send to remote via socks 5 udp tunnel
 
-#### There are 4 way to setup DNS query with tcp
+#### There are 5 way to setup DNS query with tcp
 
 * `use-vc` in `/etc/resolv.conf`: Sets RES_USEVC in _res.options.  This option forces the use of TCP for DNS resolutions.
 * pdnsd
 * lwip udp hooked, redirect to upstream tcp dns server via socks 5, config with `remote_dns_server`, you can just route your dns servers to tun or tap with `route` on OSX or `ip route` on Linux
 * lwip udp hooked, redirect to upstream tcp dns server via socks 5, config with `remote_dns_server`, setup your dns to `addr`, eg `10.0.0.2`
+* lwip udp hooked, set you dns to remote, eg: `8.8.8.8`
 
 ## Library
 
