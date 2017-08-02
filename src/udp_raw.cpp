@@ -6,6 +6,7 @@
 #include <memory.h>
 #include <time.h>
 #include <ev.h>
+#include <dns/dump_dns.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 #include "lwip/ip.h"
@@ -40,7 +41,7 @@ typedef struct {
 } response;
 
 
-//DNS header structure
+// DNS header structure @see http://www.tcpipguide.com/free/t_DNSMessageHeaderandQuestionSectionFormat.htm
 struct DNS_HEADER {
     unsigned short id; // identification number
 
@@ -145,6 +146,8 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     printf("dns id is %x\n", dns->id);
     printf("dns opcode is %x\n", dns->opcode);
     printf("dns qr is %x\n", dns->qr);
+
+    dump_dns(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr, "\\\n\t");
 
 
 
