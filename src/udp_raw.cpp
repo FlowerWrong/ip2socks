@@ -64,7 +64,6 @@ int tcp_dns_query(void *query, response *buffer, int len, u16_t dns_port) {
 
 // This callback is called when data is readable on the UDP socket.
 static void udp_cb(EV_P_ ev_io *watcher, int revents) {
-  printf("udp callback received\n");
   struct udp_raw_state *es = container_of(watcher, struct udp_raw_state, io);
   char buff[BUFFER_SIZE];
   ssize_t nread = recvfrom(watcher->fd, buff, BUFFER_SIZE, 0, (struct sockaddr *) (&(es->addr)),
@@ -141,7 +140,6 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     return;
   }
 
-  printf("Redirect udp to remote via socks 5\n");
   struct udp_raw_state *es;
   LWIP_UNUSED_ARG(arg);
   es = (struct udp_raw_state *) malloc(sizeof(struct udp_raw_state));
@@ -201,9 +199,10 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
   if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
     inet_aton(conf->remote_dns_server, &(saddr_in->sin_addr));
-    printf("Use remote dns server\n");
+    printf("UDP redirect to remote dns server %s\n", conf->remote_dns_server);
   } else {
     inet_aton(remote_fake_ip_str, &(saddr_in->sin_addr));
+    printf("UDP via socks 5 udp tunnel to %s\n", remote_fake_ip_str);
   }
   for (int i = 0; i < 4; i++) {
     buff[idx++] = ((unsigned char *) &saddr_in->sin_addr.s_addr)[i];
