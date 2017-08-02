@@ -12,9 +12,9 @@
 #include "lwip/ip.h"
 
 #if defined(LWIP_UNIX_LINUX)
-#include "dns/dump_dns.h"
 #endif
 
+#include "dns/dump_dns.h"
 #include "udp_raw.h"
 #include "struct.h"
 #include "socks5.h"
@@ -151,10 +151,8 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     printf("dns opcode is %x\n", dns->opcode);
     printf("dns qr is %x\n", dns->qr);
 
-#if defined(LWIP_UNIX_LINUX)
-    dump_dns(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr, "\\\n\t");
-#endif
 
+    dump_dns(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr, "\n\t");
 
 
     query = static_cast<char *>(malloc(p->len + 3));

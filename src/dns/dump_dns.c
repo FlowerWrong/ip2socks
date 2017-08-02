@@ -41,29 +41,10 @@
 #include "dump_dns.h"
 
 #include <arpa/nameser.h>
-
-
-#ifdef __linux__
-# define _GNU_SOURCE
-#ifndef __USE_POSIX199309
-# define __USE_POSIX199309
-#endif
-#endif
-
-#ifdef __SVR4
-# define u_int32_t uint32_t
-# define u_int16_t uint16_t
-#endif
-
 #include <arpa/inet.h>
 #include <errno.h>
 #include <resolv.h>
 #include <string.h>
-
-#ifdef p_rcode
-#undef p_rcode
-#endif
-#define p_rcode __p_rcode
 
 extern const char *p_rcode(int rcode);
 
