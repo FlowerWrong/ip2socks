@@ -5,13 +5,8 @@ build/
 .DS_Store
 .depend
 
-*.o
-*.a
 /.idea/
 *.iml
-
-*.out
-*.cbp
 
 *.log
 
@@ -53,4 +48,8 @@ config.yml
 # library
 *.a
 *.so
+*.dylib
 librdns.so.*
+*.o
+*.out
+*.cbp
