@@ -6,6 +6,9 @@
 
 #include "ev.h"
 #include "yaml.h"
+#include "rdns.h"
+#include "rdns_curve.h"
+#include "rdns_ev.h"
 
 #include "lwip/init.h"
 #include "lwip/mem.h"
@@ -79,6 +82,37 @@ void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
 
 
 struct netif netif;
+
+
+/**
+ * dns
+ */
+static int remain_tests = 0;
+
+static void
+rdns_regress_callback(struct rdns_reply *reply, void *arg) {
+  printf("got result for host: %s %s\n", (const char *) arg, reply->requested_name);
+
+  if (--remain_tests == 0) {
+    rdns_resolver_release(reply->resolver);
+  }
+}
+
+static void
+rdns_test_a(struct rdns_resolver *resolver) {
+  char *names[] = {
+    "lipuwater.com",
+    "github.com",
+    "freebsd.org",
+    NULL
+  };
+  char **cur;
+
+  for (cur = names; *cur != NULL; cur++) {
+    rdns_make_request_full(resolver, rdns_regress_callback, *cur, 1.0, 2, 1, *cur, RDNS_REQUEST_A);
+    remain_tests++;
+  }
+}
 
 int
 main(int argc, char **argv) {
@@ -321,6 +355,19 @@ main(int argc, char **argv) {
 
   ev_io_init(tuntap_io, tuntap_read_cb, tuntapif->fd, EV_READ);
   ev_io_start(loop, tuntap_io);
+
+
+  /**
+   * dns
+   */
+  struct rdns_resolver *resolver_ev;
+  resolver_ev = rdns_resolver_new();
+  rdns_bind_libev(resolver_ev, loop);
+  rdns_resolver_add_server(resolver_ev, "0.0.0.0", 8383, 0, 8);
+  rdns_resolver_init(resolver_ev);
+
+  rdns_test_a(resolver_ev);
+
 
   // TODO
   sys_check_timeouts();

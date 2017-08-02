@@ -49,3 +49,8 @@ CTestTestfile.cmake
 
 # config file
 config.yml
+
+# library
+*.a
+*.so
+librdns.so.*
