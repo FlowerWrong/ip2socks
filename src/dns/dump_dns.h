@@ -48,6 +48,8 @@ void
 dump_dns(const u_char *payload, size_t paylen,
          FILE *trace, const char *endline);
 
+char *get_query_domain(const u_char *payload, size_t paylen, FILE *trace, const char *endline);
+
 #ifdef __cplusplus
 }
 #endif

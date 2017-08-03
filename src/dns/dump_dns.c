@@ -72,6 +72,33 @@ static void dump_dns_rr(ns_msg *, ns_rr *, ns_sect, FILE *);
   (cp) += NS_INT32SZ; \
 } while (0)
 
+
+char *get_query_domain(const u_char *payload, size_t paylen, FILE *trace, const char *endline) {
+  ns_msg msg;
+  ns_sect sect = ns_s_qd;
+  int rrnum, rrmax;
+  ns_rr rr;
+
+  if (ns_initparse(payload, paylen, &msg) < 0) {
+    fputs(strerror(errno), trace);
+    return NULL;
+  }
+
+  rrmax = ns_msg_count(msg, sect);
+  if (rrmax == 0) {
+    fputs(" 0", trace);
+    return NULL;
+  }
+  for (rrnum = 0; rrnum < rrmax; rrnum++) {
+    if (ns_parserr(&msg, sect, rrnum, &rr)) {
+      fputs(strerror(errno), trace);
+      return NULL;
+    }
+    return ns_rr_name(rr);
+  }
+}
+
+
 void
 dump_dns(const u_char *payload, size_t paylen,
          FILE *trace, const char *endline) {
