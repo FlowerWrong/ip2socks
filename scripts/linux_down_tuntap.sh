@@ -19,11 +19,6 @@ EOF
 ip route del 0.0.0.0/1 via "$TUN_IP"
 ip route del 128.0.0.0/1 via "$TUN_IP"
 
-# route dns flow to tun, and redirect to tcp dns server
-# TODO just edit it with yours
-#ip route del 114.114.114.114 via "$TUN_IP"
-#ip route del 223.5.5.5 via "$TUN_IP"
-
 # remote server
 # TODO just edit it with yours
 ip route del 47.90.32.252 via $GATEWAY_IP

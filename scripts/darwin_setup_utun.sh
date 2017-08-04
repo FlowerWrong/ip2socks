@@ -7,7 +7,7 @@ DIRECT_IP_LIST=./scripts/china_ip_list/china_ip_list.txt
 GATEWAY_IP=$(netstat -nr | grep --color=never '^default' | grep -v 'utun' | sed 's/default *\([0-9\.]*\) .*/\1/' | head -1)
 echo "origin gateway is '$GATEWAY_IP'"
 
-# direct route
+# direct route TODO ip -batch
 if [ -n "$DIRECT_IP_LIST" ]
 then
     for i in $(cat $DIRECT_IP_LIST); do
@@ -18,11 +18,6 @@ fi
 # route all flow to tun
 route add -net 128.0.0.0 $TUN_IP -netmask 128.0.0.0
 route add -net 0.0.0.0 $TUN_IP -netmask 128.0.0.0
-
-# route dns flow to tun, and redirect to tcp dns server
-# TODO just edit it with yours
-route add -host 114.114.114.114 $TUN_IP
-route add -host 223.5.5.5 $TUN_IP
 
 # remote server
 # TODO just edit it with yours
