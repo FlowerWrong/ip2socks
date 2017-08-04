@@ -64,6 +64,8 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 
 * [x] too many `CLOSE_WAIT` to socks server, see `netstat -an | grep CLOSE_WAIT | wc -l`
 * [ ] OSX receive data too often, eg: `brew update`, `brew upgrade`
+* [ ] (libev) select: Invalid argument
+* [ ] Syscall param socketcall.recvfrom(buf) points to unaddressable byte(s)
 
 ## TODO
 
