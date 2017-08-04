@@ -5,6 +5,9 @@
 #ifndef EV_STRUCT_H_H
 #define EV_STRUCT_H_H
 
+#include <vector>
+#include <iostream>
+
 struct Conf {
     char *ip_mode;
     char *dns_mode;
@@ -16,6 +19,7 @@ struct Conf {
     char *gw;
     char *addr;
     char *netmask;
+    std::vector<std::string> domains;
 };
 
 struct tuntapif {

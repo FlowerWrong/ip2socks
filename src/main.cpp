@@ -3,6 +3,8 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <iostream>
+#include <fstream>
+#include <string>
 
 #include "ev.h"
 #include "yaml.h"
@@ -352,6 +354,21 @@ main(int argc, char **argv) {
   strncpy(nm_str, ip4addr_ntoa(&netmask), sizeof(nm_str));
   strncpy(gw_str, ip4addr_ntoa(&gw), sizeof(gw_str));
   printf("Host at %s mask %s gateway %s\n", ip_str, nm_str, gw_str);
+
+
+  std::string line;
+  std::ifstream chndomains("./scripts/dnsmasq-china-list/accelerated-domains.china.conf");
+  std::string sp("/");
+  std::vector<std::string> domains;
+  if (chndomains.is_open()) {
+    while (getline(chndomains, line)) {
+      domains.push_back(line);
+    }
+    chndomains.close();
+  } else {
+    std::cout << "Unable to open file" << std::endl;
+  }
+  conf->domains = domains;
 
 
   /* lwip/src/core/init.c */

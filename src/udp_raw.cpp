@@ -1,6 +1,10 @@
 /**
  * based on lwip-contrib
  */
+#include <iostream>
+#include <fstream>
+#include <string>
+
 #include <netinet/in.h>
 #include <arpa/inet.h>
 #include <memory.h>
@@ -8,6 +12,7 @@
 
 #include <ev.h>
 #include <regex.h>
+#include <vector>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 #include "lwip/ip.h"
@@ -127,6 +132,21 @@ bool isLegalDomain(char *domain) {
   }
 }
 
+
+//注意：当字符串为空时，也会返回一个空字符串
+void split(std::string &s, std::string &delim, std::vector<std::string> *ret) {
+  size_t last = 0;
+  size_t index = s.find_first_of(delim, last);
+  while (index != std::string::npos) {
+    ret->push_back(s.substr(last, index - last));
+    last = index + 1;
+    index = s.find_first_of(delim, last);
+  }
+  if (index - last > 0) {
+    ret->push_back(s.substr(last, index - last));
+  }
+}
+
 /**
  * receive callback for a UDP PCB
  * pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src_port)
@@ -148,21 +168,34 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     pbuf_copy_partial(p, buffer->buffer, p->tot_len, 0);
 
-    char q[1024];
     char *domain = get_query_domain(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr, "\n\t");
-    strcpy(q, domain);
-    q[strlen(domain)] = '\0';
-    printf("\n\ndomain is %s\n", q);
-    if (!isLegalDomain(q)) {
-      printf("legal domain is %s\n", q);
+
+    std::string cppdomain(domain);
+    printf("\n\ndomain is %s\n", domain);
+    if (!isLegalDomain(domain)) {
+      printf("legal domain is %s\n", domain);
       return;
     }
-    if (strcmp(q, "test.lipuwater.com") == 0) {
-      printf("{}{}{}{}{}{}{}{}{} Use custom dns server for %s\n", q);
+
+    bool matched = false;
+    std::string dns_server("114.114.114.114");
+    std::string sp("/");
+    for (int i = 0; i < conf->domains.size(); ++i) {
+      if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
+        matched = true;
+        std::vector<std::string> v;
+        split(conf->domains.at(i), sp, &v);
+        dns_server = v.at(2);
+        break;
+      }
+    }
+
+    if (matched) {
+      printf("{}{}{}{}{}{}{}{}{} Use custom dns server for %s\n", domain);
       // query with udp
       struct sockaddr_in dns_addr;
       dns_addr.sin_family = AF_INET;
-      dns_addr.sin_addr.s_addr = inet_addr("114.114.114.114");
+      dns_addr.sin_addr.s_addr = inet_addr(dns_server.c_str());
       dns_addr.sin_port = htons(53);
 
       int dns_fd = socket(AF_INET, SOCK_DGRAM, 0);
@@ -180,13 +213,13 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       ssize_t nread = sendto(dns_fd, buffer->buffer, p->tot_len, 0, (struct sockaddr *) (&dns_addr),
                              static_cast<socklen_t>(addr_len));
       if (nread < 0) {
-        printf("udp query sendto 114.114.114.114 failed\n");
+        printf("udp query sendto %s failed\n", dns_server.c_str());
         return;
       }
 
       nread = recvfrom(dns_fd, buffer->buffer, 4096, 0, (struct sockaddr *) &dns_addr, (socklen_t *) &addr_len);
       if (nread < 0) {
-        perror("recvfrom 114.114.114.114 failed");
+        printf("recvfrom %s \n", dns_server.c_str());
         return;
       }
       buffer->length = nread;
@@ -233,6 +266,8 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     }
     return;
   }
+
+  return;
 
   struct udp_raw_state *es;
   LWIP_UNUSED_ARG(arg);
