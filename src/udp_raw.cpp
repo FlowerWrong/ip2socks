@@ -7,6 +7,7 @@
 #include <time.h>
 
 #include <ev.h>
+#include <regex.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 #include "lwip/ip.h"
@@ -99,6 +100,33 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
   free(es);
 }
 
+#define SUBSLEN 100
+#define EBUFLEN 1280
+
+bool isLegalDomain(char *domain) {
+  regex_t re;
+  regmatch_t subs[SUBSLEN];
+  char errbuf[EBUFLEN];
+  int err;
+
+  char pattern[] = "^[0-9a-zA-Z_-]+(\\.[0-9a-zA-Z_-]+)*(\\.[a-zA-Z]+\\.)$";
+
+  printf("Pattern: %s\n", pattern);
+
+  if (regcomp(&re, pattern, REG_EXTENDED | REG_ICASE)) {
+    regerror(err, &re, errbuf, sizeof(errbuf));
+    printf("error: regcomp: %s\n", errbuf);
+    return true;
+  }
+
+  err = regexec(&re, domain, (size_t) SUBSLEN, subs, 0);
+  if (err == REG_NOMATCH) {
+    return true;
+  } else {
+    return false;
+  }
+}
+
 /**
  * receive callback for a UDP PCB
  * pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src_port)
@@ -125,6 +153,10 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     strcpy(q, domain);
     q[strlen(domain)] = '\0';
     printf("\n\ndomain is %s\n", q);
+    if (!isLegalDomain(q)) {
+      printf("legal domain is %s\n", q);
+      return;
+    }
     if (strcmp(q, "test.lipuwater.com") == 0) {
       printf("{}{}{}{}{}{}{}{}{} Use custom dns server for %s\n", q);
       // query with udp
