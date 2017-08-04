@@ -45,6 +45,7 @@
 #include <errno.h>
 #include <resolv.h>
 #include <string.h>
+#include <malloc.h>
 
 extern const char *p_rcode(int rcode);
 

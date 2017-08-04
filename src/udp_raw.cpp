@@ -68,7 +68,7 @@ int tcp_dns_query(void *query, response *buffer, int len, u16_t dns_port) {
 
 
 // This callback is called when data is readable on the UDP socket.
-static void udp_cb(EV_P_ ev_io *watcher, int revents) {
+static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
   struct udp_raw_state *es = container_of(watcher, struct udp_raw_state, io);
   char buff[BUFFER_SIZE];
   ssize_t nread = recvfrom(watcher->fd, buff, BUFFER_SIZE, 0, (struct sockaddr *) (&(es->addr)),
@@ -115,17 +115,67 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   if (strcmp("tcp", conf->dns_mode) == 0 && upcb->remote_fake_port == 53) {
     printf("Redirect dns query to tcp via socks 5\n");
     response *buffer = (response *) malloc(sizeof(response));
-    buffer->buffer = static_cast<char *>(malloc(2048));
+    buffer->buffer = static_cast<char *>(malloc(4096));
     char *query;
 
     pbuf_copy_partial(p, buffer->buffer, p->tot_len, 0);
 
+    char q[1024];
     char *domain = get_query_domain(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr, "\n\t");
-    printf("\n\ndomain is %s\n", domain);
-    if (strcmp("test.lipuwater.com", domain) != 0) {
+    strcpy(q, domain);
+    q[strlen(domain)] = '\0';
+    printf("\n\ndomain is %s\n", q);
+    if (strcmp(q, "test.lipuwater.com") == 0) {
+      printf("{}{}{}{}{}{}{}{}{} Use custom dns server for %s\n", q);
       // query with udp
+      struct sockaddr_in dns_addr;
+      dns_addr.sin_family = AF_INET;
+      dns_addr.sin_addr.s_addr = inet_addr("114.114.114.114");
+      dns_addr.sin_port = htons(53);
+
+      int dns_fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+      sockaddr_in localAddr;
+      memset(&localAddr, 0, sizeof(localAddr));
+      localAddr.sin_family = AF_INET;
+      localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+      localAddr.sin_port = htons(0);
+      if (bind(dns_fd, (struct sockaddr *) &localAddr, sizeof(localAddr)) < 0) {
+        printf("bind udp relay failed\n");
+        return;
+      }
+      int addr_len = sizeof(sockaddr_in);
+      ssize_t nread = sendto(dns_fd, buffer->buffer, p->tot_len, 0, (struct sockaddr *) (&dns_addr),
+                             static_cast<socklen_t>(addr_len));
+      if (nread < 0) {
+        printf("udp query sendto 114.114.114.114 failed\n");
+        return;
+      }
+
+      nread = recvfrom(dns_fd, buffer->buffer, 4096, 0, (struct sockaddr *) &dns_addr, (socklen_t *) &addr_len);
+      if (nread < 0) {
+        perror("recvfrom 114.114.114.114 failed");
+        return;
+      }
+      buffer->length = nread;
+
+      if (buffer->length > 0) {
+        struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length, PBUF_RAM);
+        memcpy(socksp->payload, buffer->buffer, (size_t) buffer->length);
+
+        udp_sendto(upcb, socksp, addr, port);
+        pbuf_free(socksp);
+
+        // close socks dns socket
+        close(dns_fd);
+        free(buffer->buffer);
+        free(buffer);
+        pbuf_free(p);
+      } else {
+        printf("custom udp dns query failed, len is %ld\n", buffer->length);
+      }
+      return;
     }
-    free(domain);
 
     query = static_cast<char *>(malloc(p->len + 3));
     query[0] = 0;
@@ -304,7 +354,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   es->addr_len = addr_len;
   es->socks_tcp_fd = socks_fd;
 
-  ev_io_init(&(es->io), udp_cb, udp_relay_fd, EV_READ);
+  ev_io_init(&(es->io), udp_socks_relay_cb, udp_relay_fd, EV_READ);
   ev_io_start(EV_DEFAULT, &(es->io));
   pbuf_free(p);
 }
