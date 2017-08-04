@@ -105,33 +105,6 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
   free(es);
 }
 
-#define SUBSLEN 100
-#define EBUFLEN 1280
-
-bool isLegalDomain(char *domain) {
-  regex_t re;
-  regmatch_t subs[SUBSLEN];
-  char errbuf[EBUFLEN];
-  int err;
-
-  char pattern[] = "^[0-9a-zA-Z_-]+(\\.[0-9a-zA-Z_-]+)*(\\.[a-zA-Z]+\\.)$";
-
-  printf("Pattern: %s\n", pattern);
-
-  if (regcomp(&re, pattern, REG_EXTENDED | REG_ICASE)) {
-    regerror(err, &re, errbuf, sizeof(errbuf));
-    printf("error: regcomp: %s\n", errbuf);
-    return true;
-  }
-
-  err = regexec(&re, domain, (size_t) SUBSLEN, subs, 0);
-  if (err == REG_NOMATCH) {
-    return true;
-  } else {
-    return false;
-  }
-}
-
 
 //注意：当字符串为空时，也会返回一个空字符串
 void split(std::string &s, std::string &delim, std::vector<std::string> *ret) {
@@ -172,10 +145,6 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     std::string cppdomain(domain);
     printf("\n\ndomain is %s\n", domain);
-    if (!isLegalDomain(domain)) {
-      printf("legal domain is %s\n", domain);
-      return;
-    }
 
     bool matched = false;
     std::string dns_server("114.114.114.114");
