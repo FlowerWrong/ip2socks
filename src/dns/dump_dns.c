@@ -74,7 +74,7 @@ static void dump_dns_rr(ns_msg *, ns_rr *, ns_sect, FILE *);
 } while (0)
 
 
-char *get_query_domain(const u_char *payload, size_t paylen, FILE *trace, const char *endline) {
+char *get_query_domain(const u_char *payload, size_t paylen, FILE *trace) {
   ns_msg msg;
   ns_sect sect = ns_s_qd;
   int rrnum, rrmax;

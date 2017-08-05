@@ -4,6 +4,7 @@
 #include <iostream>
 #include <fstream>
 #include <string>
+#include <vector>
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -12,7 +13,6 @@
 
 #include <ev.h>
 #include <regex.h>
-#include <vector>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 #include "lwip/ip.h"
@@ -24,6 +24,7 @@
 #include "udp_raw.h"
 #include "struct.h"
 #include "socks5.h"
+#include "util.h"
 
 #if LWIP_UDP
 
@@ -105,21 +106,6 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
   free(es);
 }
 
-
-//注意：当字符串为空时，也会返回一个空字符串
-void split(std::string &s, std::string &delim, std::vector<std::string> *ret) {
-  size_t last = 0;
-  size_t index = s.find_first_of(delim, last);
-  while (index != std::string::npos) {
-    ret->push_back(s.substr(last, index - last));
-    last = index + 1;
-    index = s.find_first_of(delim, last);
-  }
-  if (index - last > 0) {
-    ret->push_back(s.substr(last, index - last));
-  }
-}
-
 /**
  * receive callback for a UDP PCB
  * pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src_port)
@@ -141,14 +127,19 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     pbuf_copy_partial(p, buffer->buffer, p->tot_len, 0);
 
-    char *domain = get_query_domain(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr, "\n\t");
+    char *domain = get_query_domain(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr);
+
+    if (domain == NULL) {
+      return;
+    }
 
     std::string cppdomain(domain);
-    printf("\n\ndomain is %s\n", domain);
 
     bool matched = false;
     std::string dns_server("114.114.114.114");
     std::string sp("/");
+
+    // TODO cache
     for (int i = 0; i < conf->domains.size(); ++i) {
       if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
         matched = true;
@@ -160,7 +151,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     }
 
     if (matched) {
-      printf("{}{}{}{}{}{}{}{}{} Use custom dns server for %s\n", domain);
+      std::cout << cppdomain << std::endl;
       // query with udp
       struct sockaddr_in dns_addr;
       dns_addr.sin_family = AF_INET;

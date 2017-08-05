@@ -8,8 +8,6 @@
 
 #include "ev.h"
 #include "yaml.h"
-#include "rdns.h"
-#include "rdns_ev.h"
 
 #include "lwip/init.h"
 #include "lwip/mem.h"
@@ -18,6 +16,7 @@
 #include "lwip/ip4_frag.h"
 
 #include "struct.h"
+#include "util.h"
 
 #if defined(LWIP_UNIX_LINUX)
 
@@ -80,93 +79,7 @@ void sigint_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
 
 void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
 
-
 struct netif netif;
-
-
-/**
- * dns
- */
-static int remain_tests = 0;
-
-static void
-rdns_regress_callback(struct rdns_reply *reply, void *arg) {
-  printf("got result for host: %s\n", (const char *) arg);
-
-  struct rdns_reply_entry *entry;
-  char out[INET6_ADDRSTRLEN + 1];
-  const struct rdns_request_name *name;
-
-  if (reply->code == RDNS_RC_NOERROR) {
-    entry = reply->entries;
-    while (entry != NULL) {
-      if (entry->type == RDNS_REQUEST_A) {
-        inet_ntop(AF_INET, &entry->content.a.addr, out, sizeof(out));
-        printf("%s has A record %s\n", (char *) arg, out);
-      } else if (entry->type == RDNS_REQUEST_AAAA) {
-        inet_ntop(AF_INET6, &entry->content.aaa.addr, out, sizeof(out));
-        printf("%s has AAAA record %s\n", (char *) arg, out);
-      } else if (entry->type == RDNS_REQUEST_SOA) {
-        printf("%s has SOA record %s %s %u %d %d %d\n",
-               (char *) arg,
-               entry->content.soa.mname,
-               entry->content.soa.admin,
-               entry->content.soa.serial,
-               entry->content.soa.refresh,
-               entry->content.soa.retry,
-               entry->content.soa.expire);
-      } else if (entry->type == RDNS_REQUEST_TLSA) {
-        char *hex, *p;
-        unsigned i;
-
-        hex = static_cast<char *>(malloc(entry->content.tlsa.datalen * 2 + 1));
-        p = hex;
-
-        for (i = 0; i < entry->content.tlsa.datalen; i++) {
-          sprintf(p, "%02x", entry->content.tlsa.data[i]);
-          p += 2;
-        }
-
-        printf("%s has TLSA record (%d %d %d) %s\n",
-               (char *) arg,
-               (int) entry->content.tlsa.usage,
-               (int) entry->content.tlsa.selector,
-               (int) entry->content.tlsa.match_type,
-               hex);
-
-        free(hex);
-      }
-      entry = entry->next;
-    }
-  } else {
-    name = rdns_request_get_name(reply->request, NULL);
-    printf("Cannot resolve %s record for %s: %s\n",
-           rdns_strtype(name->type),
-           (char *) arg,
-           rdns_strerror(reply->code));
-  }
-
-  if (--remain_tests == 0) {
-    printf("End of test cycle\n");
-    rdns_resolver_release(reply->resolver);
-  }
-}
-
-static void
-rdns_test_a(struct rdns_resolver *resolver) {
-  char *names[] = {
-    "lipuwater.com",
-    "github.com",
-    "freebsd.org",
-    NULL
-  };
-  char **cur;
-
-  for (cur = names; *cur != NULL; cur++) {
-    rdns_make_request_full(resolver, rdns_regress_callback, *cur, 1.0, 2, 1, *cur, RDNS_REQUEST_A);
-    remain_tests++;
-  }
-}
 
 int
 main(int argc, char **argv) {
@@ -292,6 +205,8 @@ main(int argc, char **argv) {
                 datap = &conf->remote_dns_port;
               } else if (strcmp(tk, "local_dns_port") == 0) {
                 datap = &conf->local_dns_port;
+              } else if (strcmp(tk, "custom_domian_server_file") == 0) {
+                datap = &conf->custom_domian_server_file;
               } else if (strcmp(tk, "gw") == 0) {
                 datap = &conf->gw;
               } else if (strcmp(tk, "addr") == 0) {
@@ -349,26 +264,35 @@ main(int argc, char **argv) {
     memcpy(conf->dns_mode, "tcp", 3);
   }
 
-
   strncpy(ip_str, ip4addr_ntoa(&ipaddr), sizeof(ip_str));
   strncpy(nm_str, ip4addr_ntoa(&netmask), sizeof(nm_str));
   strncpy(gw_str, ip4addr_ntoa(&gw), sizeof(gw_str));
   printf("Host at %s mask %s gateway %s\n", ip_str, nm_str, gw_str);
 
 
-  std::string line;
-  std::ifstream chndomains("./scripts/dnsmasq-china-list/accelerated-domains.china.conf");
-  std::string sp("/");
-  std::vector<std::string> domains;
-  if (chndomains.is_open()) {
-    while (getline(chndomains, line)) {
-      domains.push_back(line);
+  if (conf->custom_domian_server_file != NULL) {
+    std::string line;
+    std::string file_sp(";");
+    std::string sp("/");
+
+    std::vector<std::string> domains;
+
+    std::vector<std::string> files;
+    std::string ffs(conf->custom_domian_server_file);
+    split(ffs, file_sp, &files);
+    for (int i = 0; i < files.size(); ++i) {
+      std::ifstream chndomains(files.at(i));
+      if (chndomains.is_open()) {
+        while (getline(chndomains, line)) {
+          domains.push_back(line);
+        }
+        chndomains.close();
+      } else {
+        std::cout << "Unable to open file" << std::endl;
+      }
     }
-    chndomains.close();
-  } else {
-    std::cout << "Unable to open file" << std::endl;
+    conf->domains = domains;
   }
-  conf->domains = domains;
 
 
   /* lwip/src/core/init.c */
@@ -426,17 +350,6 @@ main(int argc, char **argv) {
   ev_io_start(loop, tuntap_io);
 
 
-  /**
-   * dns
-   */
-  struct rdns_resolver *resolver_ev;
-  resolver_ev = rdns_resolver_new();
-  rdns_bind_libev(resolver_ev, loop);
-  rdns_resolver_add_server(resolver_ev, "8.8.8.8", 53, 0, 8);
-  rdns_resolver_init(resolver_ev);
-  rdns_resolver_set_log_level(resolver_ev, RDNS_LOG_DEBUG);
-
-
   // TODO
   sys_check_timeouts();
 
@@ -446,8 +359,6 @@ main(int argc, char **argv) {
   on_shell();
 
   std::cout << "Ip2socks started!" << std::endl;
-
-  rdns_test_a(resolver_ev);
 
   return ev_run(loop, 0);
 }

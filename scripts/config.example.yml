@@ -5,6 +5,7 @@ socks_port: 1080
 remote_dns_server: 8.8.8.8
 remote_dns_port: 53
 local_dns_port: 53 # if you use your own local dns server, eg: pdnsd, dnsmasg, this is upstream dns server.
+custom_domian_server_file: ./scripts/dnsmasq-china-list/accelerated-domains.china.conf # if multi, split with ';'
 gw: 10.0.0.1 # gateway of lwip netif
 addr: 10.0.0.2 # ip of lwip netif
 netmask: 255.255.255.0 # netmask of lwip netif

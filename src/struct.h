@@ -16,6 +16,7 @@ struct Conf {
     char *remote_dns_server;
     char *remote_dns_port;
     char *local_dns_port;
+    char *custom_domian_server_file;
     char *gw;
     char *addr;
     char *netmask;
