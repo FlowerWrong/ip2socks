@@ -128,7 +128,6 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     pbuf_copy_partial(p, buffer->buffer, p->tot_len, 0);
 
     char *domain = get_query_domain(reinterpret_cast<const u_char *>(buffer->buffer), p->tot_len, stderr);
-
     if (domain == NULL) {
       return;
     }
@@ -138,20 +137,21 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     bool matched = false;
     std::string dns_server("114.114.114.114");
     std::string sp("/");
+    std::cout << cppdomain << " via udp dns server " << dns_server << std::endl;
 
-    // TODO cache
-    for (int i = 0; i < conf->domains.size(); ++i) {
-      if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
-        matched = true;
-        std::vector<std::string> v;
-        split(conf->domains.at(i), sp, &v);
-        dns_server = v.at(2);
-        break;
-      }
-    }
+    // TODO cache FIXME
+//    for (int i = 0; i < conf->domains.size(); ++i) {
+//      if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
+//        matched = true;
+//        std::vector<std::string> v;
+//        split(conf->domains.at(i), sp, &v);
+//        dns_server = v.at(2);
+//        break;
+//      }
+//    }
 
     if (matched) {
-      std::cout << cppdomain << std::endl;
+      std::cout << cppdomain << " via udp dns server " << dns_server << std::endl;
       // query with udp
       struct sockaddr_in dns_addr;
       dns_addr.sin_family = AF_INET;

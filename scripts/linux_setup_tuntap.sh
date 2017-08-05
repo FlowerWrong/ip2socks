@@ -7,6 +7,8 @@ DIRECT_IP_LIST=./scripts/china_ip_list/china_ip_list.txt
 GATEWAY_IP=$(ip route | awk '/default/ { print $3 }')
 echo "origin gateway is '$GATEWAY_IP'"
 
+sysctl -w net.ipv4.ip_forward=1 >> /dev/null
+
 # direct route
 chnroutes=$(grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}" $DIRECT_IP_LIST |\
     sed -e "s/^/route add /" -e "s/$/ via $GATEWAY_IP/")
