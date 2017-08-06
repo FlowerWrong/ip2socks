@@ -19,6 +19,7 @@
 #if LWIP_TCP && LWIP_CALLBACK_API
 
 static struct tcp_pcb *tcp_raw_pcb;
+static ev_timer timeout_watcher;
 
 #define container_of(ptr, type, member) ({      \
   const typeof( ((type *)0)->member ) *__mptr = (ptr);  \
@@ -239,7 +240,13 @@ static void free_all(struct ev_loop *loop, ev_io *watcher, struct tcp_raw_state 
   tcp_raw_close(pcb, es);
 }
 
+static void
+timeout_cb(EV_P_ ev_timer *watcher, int revents) {
+  puts("timeout");
+}
 
+
+// https://github.com/dreamcat4/lwip/blob/master/contrib/apps/httpserver_raw/httpd.c
 static void send_data_lwip(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
   if (pcb != NULL && es != NULL) {
     err_t err;
@@ -253,11 +260,25 @@ static void send_data_lwip(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
         len = es->socks_buf_used;
       }
 
+      // 发送缓冲区满
+      if (tcp_sndbuf(pcb) == 0) {
+        // FIXME
+        usleep(1000); // 1ms
+        return;
+      }
+
       if (len > 0) {
         do {
           err = tcp_write(pcb, es->socks_buf.c_str(), len, TCP_WRITE_FLAG_COPY);
+
           if (err == ERR_MEM) {
-            len /= 2;
+            if ((tcp_sndbuf(pcb) == 0) || (tcp_sndqueuelen(pcb) >= TCP_SND_QUEUELEN)) {
+              /* no need to try smaller sizes */
+              len = 1;
+            } else {
+              len /= 2;
+            }
+            printf("Send failed, trying less (%d bytes)\n", len);
           }
         } while (err == ERR_MEM && len > 1);
 
@@ -295,7 +316,9 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   struct tcp_pcb *pcb = es->pcb;
 
   if (es->socks_buf_used > BUFFER_SIZE) {
+    // FIXME
     es->lwip_blocked = 1;
+    usleep(1000);
     return;
   }
 
@@ -313,9 +336,10 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   if (0 == nreads) {
     printf("<---------------------------------- read EOF close socks fd %d.\n", watcher->fd);
     // write last data and then close
-    do {
-      write_and_output(pcb, es);
-    } while (es->socks_buf_used > 0);
+//    do {
+//      printf("write rest data\n");
+//      write_and_output(pcb, es);
+//    } while (es->socks_buf_used > 0);
     free_all(loop, watcher, es, pcb);
     return;
   }
@@ -325,7 +349,8 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   es->socks_buf_used += nreads;
 
   if (es->socks_buf_used > nreads) {
-    std::cout << "recv " << nreads << " data, " << "es->socks_buf_used is " << es->socks_buf_used << std::endl;
+    std::cout << "recv " << nreads << " data, " << "es->socks_buf_used is " << es->socks_buf_used
+              << ", (tcp_sndbuf(pcb) is " << tcp_sndbuf(pcb) << std::endl;
   }
 
   write_and_output(pcb, es);
