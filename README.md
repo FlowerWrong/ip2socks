@@ -64,9 +64,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 
 * [x] too many `CLOSE_WAIT` to socks server, see `netstat -an | grep CLOSE_WAIT | wc -l`
 * [ ] OSX receive data too often, eg: `brew update`, `brew upgrade`
-* [ ] (libev) select: Invalid argument
-* [ ] Syscall param socketcall.recvfrom(buf) points to unaddressable byte(s)
-* [ ] if quic error, go to `chrome://flags/` disable quic
+* [x] if `ERR_QUIC_PROTOCOL_ERROR`, go to `chrome://flags/` disable quic
 
 ## TODO
 
