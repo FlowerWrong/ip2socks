@@ -35,15 +35,14 @@ static struct udp_pcb *udp_raw_pcb;
 
 struct udp_raw_state {
     ev_io io;
-    int socks_tcp_fd;
+    int socks_tcp_fd; // just for udp relay via socks5
     u8_t state;
     u8_t retries;
     struct udp_pcb *pcb;
-    struct sockaddr_in addr;
-    char addr_ip[INET_ADDRSTRLEN];
+    struct sockaddr_in addr; // recvfrom addr
+    char addr_ip[INET_ADDRSTRLEN]; // origin sendto ip address
     ssize_t addr_len;
-    const ip_addr_t *udp_addr;
-    u16_t udp_port;
+    u16_t udp_port; // origin sendto port
 };
 
 typedef struct {
@@ -74,6 +73,14 @@ int tcp_dns_query(void *query, response *buffer, int len, u16_t dns_port) {
 }
 
 
+static void free_dns_query(ev_io *watcher, struct udp_raw_state *es) {
+  // close socks dns socket
+  close(watcher->fd);
+  ev_io_stop(EV_DEFAULT, watcher);
+  free(es);
+}
+
+
 // This callback is called when data is readable on the UDP socket.
 static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
   struct udp_raw_state *es = container_of(watcher, struct udp_raw_state, io);
@@ -82,6 +89,14 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
                            reinterpret_cast<socklen_t *>(&es->addr_len));
   if (nread < 0) {
     printf("udp data recvfrom failed\n");
+    free_dns_query(watcher, es);
+    return;
+  }
+
+  if (nread == 0) {
+    printf("read EOF from udp socks %d\n", watcher->fd);
+    free_dns_query(watcher, es);
+    return;
   }
 
   /* send received packet back to sender */
@@ -93,17 +108,48 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
   ip.s_addr = inet_addr(es->addr_ip);
 
   err_t e = udp_sendto(es->pcb, socksp, reinterpret_cast<const ip_addr_t *>(&ip), es->udp_port);
+  /* free the pbuf */
+  pbuf_free(socksp);
+  close(es->socks_tcp_fd);
+  free_dns_query(watcher, es);
   if (e != 0) {
     printf("udp_sendto %d %s\n", e, lwip_strerr(e));
   }
+}
+
+
+static void dns_relay_cb(EV_P_ ev_io *watcher, int revents) {
+  struct udp_raw_state *es = container_of(watcher, struct udp_raw_state, io);
+  char buff[BUFFER_SIZE];
+  ssize_t nread = recvfrom(watcher->fd, buff, BUFFER_SIZE, 0, (struct sockaddr *) (&(es->addr)),
+                           reinterpret_cast<socklen_t *>(&es->addr_len));
+  if (nread < 0) {
+    printf("udp data recvfrom failed\n");
+    free_dns_query(watcher, es);
+    return;
+  }
+
+  if (nread == 0) {
+    printf("read EOF from udp socks %d\n", watcher->fd);
+    free_dns_query(watcher, es);
+    return;
+  }
+
+  /* send received packet back to sender */
+  struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) nread, PBUF_RAM);
+  memcpy(socksp->payload, buff, (size_t) nread);
+
+  struct in_addr ip;
+  ip.s_addr = inet_addr(es->addr_ip);
+
+  err_t e = udp_sendto(es->pcb, socksp, reinterpret_cast<const ip_addr_t *>(&ip), es->udp_port);
   /* free the pbuf */
   pbuf_free(socksp);
-
-  // close socks dns socket
-  close(watcher->fd);
-  ev_io_stop(EV_DEFAULT, watcher);
-  close(es->socks_tcp_fd);
-  free(es);
+  free_dns_query(watcher, es);
+  if (e != 0) {
+    printf("udp_sendto %d %s\n", e, lwip_strerr(e));
+    return;
+  }
 }
 
 /**
@@ -113,10 +159,12 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
 static void
 udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
              const ip_addr_t *addr, u16_t port) {
-  LWIP_UNUSED_ARG(arg);
   if (p == NULL) {
     return;
   }
+  struct udp_raw_state *es;
+  LWIP_UNUSED_ARG(arg);
+
   upcb->so_options |= SO_REUSEADDR;
 
   if (strcmp("tcp", conf->dns_mode) == 0 && upcb->remote_fake_port == 53) {
@@ -137,18 +185,19 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     bool matched = false;
     std::string dns_server("114.114.114.114");
     std::string sp("/");
-    std::cout << cppdomain << " via udp dns server " << dns_server << std::endl;
 
     // TODO cache FIXME
-//    for (int i = 0; i < conf->domains.size(); ++i) {
-//      if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
-//        matched = true;
-//        std::vector<std::string> v;
-//        split(conf->domains.at(i), sp, &v);
-//        dns_server = v.at(2);
-//        break;
-//      }
-//    }
+    // conf->domains is list, a record like `server=/0-6.com/114.114.114.114`
+    // cppdomain is domain, eg: github.com
+    for (int i = 0; i < conf->domains.size(); ++i) {
+      if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
+        matched = true;
+        std::vector<std::string> v;
+        split(conf->domains.at(i), sp, &v);
+        dns_server = v.at(2);
+        break;
+      }
+    }
 
     if (matched) {
       std::cout << cppdomain << " via udp dns server " << dns_server << std::endl;
@@ -177,30 +226,24 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
         return;
       }
 
-      nread = recvfrom(dns_fd, buffer->buffer, 4096, 0, (struct sockaddr *) &dns_addr, (socklen_t *) &addr_len);
-      if (nread < 0) {
-        printf("recvfrom %s \n", dns_server.c_str());
-        return;
-      }
-      buffer->length = nread;
+      es = (struct udp_raw_state *) malloc(sizeof(struct udp_raw_state));
+      memset(es, 0, sizeof(struct udp_raw_state));
+      es->pcb = upcb;
+      es->state = 0;
+      es->retries = 0;
+      es->udp_port = port;
+      inet_ntop(AF_INET, addr, es->addr_ip, INET_ADDRSTRLEN);
 
-      if (buffer->length > 0) {
-        struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length, PBUF_RAM);
-        memcpy(socksp->payload, buffer->buffer, (size_t) buffer->length);
+      es->addr = dns_addr;
+      es->addr_len = addr_len;
+      es->socks_tcp_fd = 0;
 
-        udp_sendto(upcb, socksp, addr, port);
-        pbuf_free(socksp);
-
-        // close socks dns socket
-        close(dns_fd);
-        free(buffer->buffer);
-        free(buffer);
-        pbuf_free(p);
-      } else {
-        printf("custom udp dns query failed, len is %ld\n", buffer->length);
-      }
+      ev_io_init(&(es->io), dns_relay_cb, dns_fd, EV_READ);
+      ev_io_start(EV_DEFAULT, &(es->io));
+      pbuf_free(p);
       return;
     }
+    std::cout << cppdomain << " via tcp dns server " << conf->remote_dns_server << std::endl;
 
     query = static_cast<char *>(malloc(p->len + 3));
     query[0] = 0;
@@ -227,16 +270,86 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     return;
   }
 
-  return;
+  if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
+    char buf[TCP_WND];
+    pbuf_copy_partial(p, buf, p->tot_len, 0);
 
-  struct udp_raw_state *es;
-  LWIP_UNUSED_ARG(arg);
+    char *domain = get_query_domain(reinterpret_cast<const u_char *>(buf), p->tot_len, stderr);
+    if (domain == NULL) {
+      return;
+    }
+
+    std::string cppdomain(domain);
+
+    bool matched = false;
+    std::string dns_server("114.114.114.114");
+    std::string sp("/");
+
+    // TODO cache FIXME
+    // conf->domains is list, a record like `server=/0-6.com/114.114.114.114`
+    // cppdomain is domain, eg: github.com
+    for (int i = 0; i < conf->domains.size(); ++i) {
+      if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
+        matched = true;
+        std::vector<std::string> v;
+        split(conf->domains.at(i), sp, &v);
+        dns_server = v.at(2);
+        break;
+      }
+    }
+
+    if (matched) {
+      std::cout << cppdomain << " via udp dns server " << dns_server << std::endl;
+      // query with udp
+      struct sockaddr_in dns_addr;
+      dns_addr.sin_family = AF_INET;
+      dns_addr.sin_addr.s_addr = inet_addr(dns_server.c_str());
+      dns_addr.sin_port = htons(53);
+
+      int dns_fd = socket(AF_INET, SOCK_DGRAM, 0);
+
+      sockaddr_in localAddr;
+      memset(&localAddr, 0, sizeof(localAddr));
+      localAddr.sin_family = AF_INET;
+      localAddr.sin_addr.s_addr = htonl(INADDR_ANY);
+      localAddr.sin_port = htons(0);
+      if (bind(dns_fd, (struct sockaddr *) &localAddr, sizeof(localAddr)) < 0) {
+        printf("bind udp relay failed\n");
+        return;
+      }
+      int addr_len = sizeof(sockaddr_in);
+      ssize_t nread = sendto(dns_fd, buf, p->tot_len, 0, (struct sockaddr *) (&dns_addr),
+                             static_cast<socklen_t>(addr_len));
+      if (nread < 0) {
+        printf("udp query sendto %s failed\n", dns_server.c_str());
+        return;
+      }
+
+      es = (struct udp_raw_state *) malloc(sizeof(struct udp_raw_state));
+      memset(es, 0, sizeof(struct udp_raw_state));
+      es->pcb = upcb;
+      es->state = 0;
+      es->retries = 0;
+      es->udp_port = port;
+      inet_ntop(AF_INET, addr, es->addr_ip, INET_ADDRSTRLEN);
+
+      es->addr = dns_addr;
+      es->addr_len = addr_len;
+      es->socks_tcp_fd = 0;
+
+      ev_io_init(&(es->io), dns_relay_cb, dns_fd, EV_READ);
+      ev_io_start(EV_DEFAULT, &(es->io));
+      pbuf_free(p);
+      return;
+    }
+  }
+
+
   es = (struct udp_raw_state *) malloc(sizeof(struct udp_raw_state));
   memset(es, 0, sizeof(struct udp_raw_state));
   es->pcb = upcb;
   es->state = 0;
   es->retries = 0;
-  es->udp_addr = addr;
   es->udp_port = port;
   inet_ntop(AF_INET, addr, es->addr_ip, INET_ADDRSTRLEN);
 
