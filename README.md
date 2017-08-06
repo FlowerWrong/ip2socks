@@ -66,6 +66,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [ ] OSX receive data too often, eg: `brew update`, `brew upgrade`
 * [ ] (libev) select: Invalid argument
 * [ ] Syscall param socketcall.recvfrom(buf) points to unaddressable byte(s)
+* [ ] if quic error, go to `chrome://flags/` disable quic
 
 ## TODO
 

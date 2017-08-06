@@ -152,6 +152,47 @@ static void dns_relay_cb(EV_P_ ev_io *watcher, int revents) {
   }
 }
 
+static void tcp_dns_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
+  struct udp_raw_state *es = container_of(watcher, struct udp_raw_state, io);
+  response *buffer = (response *) malloc(sizeof(response));
+  buffer->buffer = static_cast<char *>(malloc(4096));
+  buffer->length = recv(watcher->fd, buffer->buffer, 4096, 0);
+
+  if (buffer->length < 0) {
+    printf("tcp dns query failed, len is %ld\n", buffer->length);
+    free(buffer->buffer);
+    free(buffer);
+
+    free_dns_query(watcher, es);
+    return;
+  }
+
+  if (buffer->length == 0) {
+    printf("tcp dns query EOF\n");
+    free(buffer->buffer);
+    free(buffer);
+
+    free_dns_query(watcher, es);
+    return;
+  }
+
+  if (buffer->length > 0) {
+    struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length - 2, PBUF_RAM);
+    memcpy(socksp->payload, buffer->buffer + 2, (size_t) buffer->length - 2);
+
+    struct in_addr ip;
+    ip.s_addr = inet_addr(es->addr_ip);
+
+    udp_sendto(es->pcb, socksp, reinterpret_cast<const ip_addr_t *>(&ip), es->udp_port);
+    pbuf_free(socksp);
+
+    free(buffer->buffer);
+    free(buffer);
+
+    free_dns_query(watcher, es);
+  }
+}
+
 /**
  * receive callback for a UDP PCB
  * pcb->recv(pcb->recv_arg, pcb, p, ip_current_src_addr(), src_port)
@@ -245,24 +286,46 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     query[0] = 0;
     query[1] = (char) p->len;
     memcpy(query + 2, buffer->buffer, p->len);
-    int socks_fd = tcp_dns_query(query, buffer, p->len + 2, upcb->remote_fake_port);
+    // int socks_fd = tcp_dns_query(query, buffer, p->len + 2, upcb->remote_fake_port);
 
-    if (buffer->length > 0) {
-      struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) buffer->length - 2, PBUF_RAM);
-      memcpy(socksp->payload, buffer->buffer + 2, (size_t) buffer->length - 2);
-
-      udp_sendto(upcb, socksp, addr, port);
-      pbuf_free(socksp);
-
-      // close socks dns socket
-      close(socks_fd);
-      free(buffer->buffer);
-      free(buffer);
-      free(query);
-      pbuf_free(p);
-    } else {
-      printf("tcp dns query failed, len is %ld\n", buffer->length);
+    int socks_fd = socks5_connect(conf->socks_server, conf->socks_port);
+    if (socks_fd < 1) {
+      printf("socks5 connect failed\n");
+      return;
     }
+
+    char dns_port[16];
+    sprintf(dns_port, "%d", upcb->remote_fake_port);
+
+    int ret = socks5_auth(socks_fd, conf->remote_dns_server, dns_port, 0x01, 1);
+    if (ret < 0) {
+      printf("socks5 auth failed\n");
+      return;
+    }
+
+    // forward dns query
+    send(socks_fd, query, p->len + 2, 0);
+
+    es = (struct udp_raw_state *) malloc(sizeof(struct udp_raw_state));
+    memset(es, 0, sizeof(struct udp_raw_state));
+    es->pcb = upcb;
+    es->state = 0;
+    es->retries = 0;
+    es->udp_port = port;
+    inet_ntop(AF_INET, addr, es->addr_ip, INET_ADDRSTRLEN);
+
+    int addr_len = sizeof(sockaddr_in);
+    struct sockaddr_in socks_proxy_addr;
+
+    socks_proxy_addr.sin_family = AF_INET;
+    socks_proxy_addr.sin_addr.s_addr = inet_addr(conf->socks_server);
+    socks_proxy_addr.sin_port = htons(atoi(conf->socks_port));
+    es->addr = socks_proxy_addr;
+    es->addr_len = addr_len;
+    es->socks_tcp_fd = socks_fd;
+
+    ev_io_init(&(es->io), tcp_dns_cb, socks_fd, EV_READ);
+    ev_io_start(EV_DEFAULT, &(es->io));
     return;
   }
 
