@@ -186,15 +186,11 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     std::string dns_server("114.114.114.114");
     std::string sp("/");
 
-    // TODO cache FIXME
-    // conf->domains is list, a record like `server=/0-6.com/114.114.114.114`
-    // cppdomain is domain, eg: github.com
+    // TODO cache
     for (int i = 0; i < conf->domains.size(); ++i) {
-      if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
+      if (has_suffix(cppdomain, conf->domains.at(i).at(1))) {
         matched = true;
-        std::vector<std::string> v;
-        split(conf->domains.at(i), sp, &v);
-        dns_server = v.at(2);
+        dns_server = conf->domains.at(i).at(2);
         break;
       }
     }
@@ -285,15 +281,11 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     std::string dns_server("114.114.114.114");
     std::string sp("/");
 
-    // TODO cache FIXME
-    // conf->domains is list, a record like `server=/0-6.com/114.114.114.114`
-    // cppdomain is domain, eg: github.com
+    // TODO cache
     for (int i = 0; i < conf->domains.size(); ++i) {
-      if (conf->domains.at(i).find(cppdomain) != std::string::npos) {
+      if (has_suffix(cppdomain, conf->domains.at(i).at(1))) {
         matched = true;
-        std::vector<std::string> v;
-        split(conf->domains.at(i), sp, &v);
-        dns_server = v.at(2);
+        dns_server = conf->domains.at(i).at(2);
         break;
       }
     }

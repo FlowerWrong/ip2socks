@@ -20,7 +20,7 @@ struct Conf {
     char *gw;
     char *addr;
     char *netmask;
-    std::vector<std::string> domains;
+    std::vector<std::vector<std::string>> domains;
 };
 
 struct tuntapif {

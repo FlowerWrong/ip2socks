@@ -11,4 +11,6 @@
 
 void split(std::string &s, std::string &delim, std::vector<std::string> *ret);
 
+bool has_suffix(const std::string &str, const std::string &suffix);
+
 #endif //LIBRDNS_UTIL_H

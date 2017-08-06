@@ -275,7 +275,7 @@ main(int argc, char **argv) {
     std::string file_sp(";");
     std::string sp("/");
 
-    std::vector<std::string> domains;
+    std::vector<std::vector<std::string>> domains;
 
     std::vector<std::string> files;
     std::string ffs(conf->custom_domian_server_file);
@@ -284,7 +284,9 @@ main(int argc, char **argv) {
       std::ifstream chndomains(files.at(i));
       if (chndomains.is_open()) {
         while (getline(chndomains, line)) {
-          domains.push_back(line);
+          std::vector<std::string> v;
+          split(line, sp, &v);
+          domains.push_back(v);
         }
         chndomains.close();
       } else {
