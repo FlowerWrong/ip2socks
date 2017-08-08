@@ -25,25 +25,8 @@ static ev_timer timeout_watcher;
   const typeof( ((type *)0)->member ) *__mptr = (ptr);  \
   (type *)( (char *)__mptr - offsetof(type,member) );})
 
-enum tcp_raw_states {
-    ES_NONE = 0,
-    ES_ACCEPTED,
-    ES_RECEIVED,
-    ES_CLOSING
-};
 
-struct tcp_raw_state {
-    ev_io io;
-    u8_t state;
-    u8_t retries;
-    struct tcp_pcb *pcb;
-    int socks_fd;
-    std::string buf;
-    u16_t buf_used;
-    std::string socks_buf;
-    u16_t socks_buf_used;
-    int lwip_blocked;
-};
+static ev_tstamp timeout = 60.;
 
 static void tcp_raw_send(struct tcp_pcb *tpcb, struct tcp_raw_state *es);
 
@@ -240,11 +223,6 @@ static void free_all(struct ev_loop *loop, ev_io *watcher, struct tcp_raw_state 
   tcp_raw_close(pcb, es);
 }
 
-static void
-timeout_cb(EV_P_ ev_timer *watcher, int revents) {
-  puts("timeout");
-}
-
 
 // https://github.com/dreamcat4/lwip/blob/master/contrib/apps/httpserver_raw/httpd.c
 static void send_data_lwip(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
@@ -263,8 +241,7 @@ static void send_data_lwip(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
       // 发送缓冲区满
       if (tcp_sndbuf(pcb) == 0) {
         // FIXME
-        usleep(1000); // 1ms
-        return;
+        // return;
       }
 
       if (len > 0) {
@@ -310,15 +287,31 @@ static void write_and_output(struct tcp_pcb *pcb, struct tcp_raw_state *es) {
   send_data_lwip(pcb, es);
 }
 
+static void
+timeout_cb(struct ev_loop *loop, ev_timer *watcher, int revents) {
+  timer_ctx *timeout_ctx = container_of(watcher, timer_ctx, watcher);
+  struct tcp_raw_state *es = timeout_ctx->raw_state;
+  write_and_output(es->pcb, es);
+  printf("timeout, clean\n");
+}
+
+static void
+block_cb(struct ev_loop *loop, ev_timer *watcher, int revents) {
+  timer_ctx *block_ctx = container_of(watcher, timer_ctx, watcher);
+  struct tcp_raw_state *es = block_ctx->raw_state;
+  es->lwip_blocked = 0;
+  printf("Reset lwip block\n");
+}
+
 
 static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   struct tcp_raw_state *es = container_of(watcher, struct tcp_raw_state, io);
   struct tcp_pcb *pcb = es->pcb;
 
+  ev_timer_again(EV_A_ &(es->timeout_ctx->watcher));
+
   if (es->socks_buf_used > BUFFER_SIZE) {
-    // FIXME
     es->lwip_blocked = 1;
-    usleep(1000);
     return;
   }
 
@@ -335,11 +328,7 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   // EOF
   if (0 == nreads) {
     printf("<---------------------------------- read EOF close socks fd %d.\n", watcher->fd);
-    // write last data and then close
-//    do {
-//      printf("write rest data\n");
-//      write_and_output(pcb, es);
-//    } while (es->socks_buf_used > 0);
+    write_and_output(pcb, es);
     free_all(loop, watcher, es, pcb);
     return;
   }
@@ -402,8 +391,16 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
     return -1;
   }
 
-  es = (struct tcp_raw_state *) malloc(sizeof(struct tcp_raw_state));
-  memset(es, 0, sizeof(struct tcp_raw_state));
+  es = (tcp_raw_state *) malloc(sizeof(tcp_raw_state));
+  memset(es, 0, sizeof(tcp_raw_state));
+
+  es->block_ctx = (timer_ctx *) malloc(sizeof(timer_ctx));
+  memset(es->block_ctx, 0, sizeof(timer_ctx));
+  es->block_ctx->raw_state = es;
+
+  es->timeout_ctx = (timer_ctx *) malloc(sizeof(timer_ctx));
+  memset(es->timeout_ctx, 0, sizeof(timer_ctx));
+  es->timeout_ctx->raw_state = es;
 
   if (es != NULL) {
     es->state = ES_ACCEPTED;
@@ -415,6 +412,12 @@ tcp_raw_accept(void *arg, struct tcp_pcb *newpcb, err_t err) {
     es->lwip_blocked = 0;
 
     es->socks_fd = socks_fd;
+
+
+    ev_timer_init(&(es->timeout_ctx->watcher), timeout_cb, timeout, 0.);
+    ev_timer_start(EV_DEFAULT, &(es->timeout_ctx->watcher));
+
+    ev_timer_init(&(es->block_ctx->watcher), block_cb, 0.1, 0.);
 
     ev_io_init(&(es->io), read_cb, socks_fd, EV_READ);
     ev_io_start(EV_DEFAULT, &(es->io));
