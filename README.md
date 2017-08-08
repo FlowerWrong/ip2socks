@@ -65,7 +65,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [x] too many `CLOSE_WAIT` to socks server, see `netstat -an | grep CLOSE_WAIT | wc -l`
 * [x] OSX receive data too often, eg: `brew update`, `brew upgrade`
 * [x] if `ERR_QUIC_PROTOCOL_ERROR`, go to `chrome://flags/` disable quic
-* [ ] UDP sendto `Message too long` bug
+* [x] ns_initparse `Message too long` bug
 
 ## TODO
 

@@ -21,11 +21,10 @@
 #include "udp_raw.h"
 #include "struct.h"
 #include "socks5.h"
-#include "util.h"
 
 #if LWIP_UDP
 
-#define UDP_BUFFER_SIZE 4096
+#define UDP_BUFFER_SIZE 1460
 
 typedef struct udp_timer_ctx {
     ev_timer watcher;
@@ -57,28 +56,6 @@ static struct udp_pcb *udp_raw_pcb;
   const typeof( ((type *)0)->member ) *__mptr = (ptr);  \
   (type *)( (char *)__mptr - offsetof(type,member) );})
 
-int tcp_dns_query(void *query, response *buffer, int len, u16_t dns_port) {
-  int sock = socks5_connect(conf->socks_server, conf->socks_port);
-  if (sock < 1) {
-    printf("socks5 connect failed\n");
-    return -1;
-  }
-
-  char port[16];
-  sprintf(port, "%d", dns_port);
-
-  int ret = socks5_auth(sock, conf->remote_dns_server, port, 0x01, 1);
-  if (ret < 0) {
-    printf("socks5 auth failed\n");
-    return -1;
-  }
-
-  // forward dns query
-  send(sock, query, len, 0);
-  buffer->length = recv(sock, buffer->buffer, UDP_BUFFER_SIZE, 0);
-  return sock;
-}
-
 
 static void free_dns_query(ev_io *watcher, struct udp_raw_state *es) {
   // close socks dns socket
@@ -89,7 +66,6 @@ static void free_dns_query(ev_io *watcher, struct udp_raw_state *es) {
     ev_timer_stop(EV_DEFAULT, &(es->timeout_ctx->watcher));
   }
   free(es->timeout_ctx);
-
   free(es);
 }
 
@@ -105,7 +81,6 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
     free_dns_query(watcher, es);
     return;
   }
-
   if (nread == 0) {
     printf("read EOF from udp socks %d\n", watcher->fd);
     free_dns_query(watcher, es);
@@ -324,7 +299,6 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     query[0] = 0;
     query[1] = (char) p->len;
     memcpy(query + 2, buffer->buffer, p->len);
-    // int socks_fd = tcp_dns_query(query, buffer, p->len + 2, upcb->remote_fake_port);
 
     int socks_fd = socks5_connect(conf->socks_server, conf->socks_port);
     if (socks_fd < 1) {
@@ -377,16 +351,18 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   char buf[TCP_WND];
   pbuf_copy_partial(p, buf, p->tot_len, 0);
 
-  char *domain = get_query_domain(reinterpret_cast<const u_char *>(buf), p->tot_len, stderr);
-  if (domain == NULL) {
-    return;
-  }
-
-  std::string cppdomain(domain);
+  char *domain = NULL;
   if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
     bool matched = false;
     std::string dns_server("114.114.114.114");
     std::string sp("/");
+
+    domain = get_query_domain(reinterpret_cast<const u_char *>(buf), p->tot_len, stderr);
+    if (domain == NULL) {
+      printf("domain is null\n");
+      return;
+    }
+    std::string cppdomain(domain);
 
     // TODO cache
     for (int i = 0; i < conf->domains.size(); ++i) {
@@ -505,7 +481,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
   if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
     inet_aton(conf->remote_dns_server, &(saddr_in->sin_addr));
-    printf("UDP dns query %s redirect to remote dns server %s\n", cppdomain.c_str(), conf->remote_dns_server);
+    printf("UDP dns query %s redirect to remote dns server %s\n", domain, conf->remote_dns_server);
   } else {
     inet_aton(remote_fake_ip_str, &(saddr_in->sin_addr));
     printf("UDP via socks 5 udp tunnel to %s\n", remote_fake_ip_str);

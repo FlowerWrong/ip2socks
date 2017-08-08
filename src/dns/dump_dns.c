@@ -103,12 +103,11 @@ hostname_from_question(ns_msg msg) {
 
 char *get_query_domain(const u_char *payload, size_t paylen, FILE *trace) {
   ns_msg msg;
-  ns_sect sect = ns_s_qd;
-  int rrnum, rrmax;
-  ns_rr rr;
 
+  // Message too long
   if (ns_initparse(payload, paylen, &msg) < 0) {
     fputs(strerror(errno), trace);
+    printf("\n");
     return NULL;
   }
 
