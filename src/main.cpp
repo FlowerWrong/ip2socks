@@ -281,16 +281,18 @@ main(int argc, char **argv) {
     std::string ffs(conf->custom_domian_server_file);
     split(ffs, file_sp, &files);
     for (int i = 0; i < files.size(); ++i) {
-      std::ifstream chndomains(files.at(i));
-      if (chndomains.is_open()) {
-        while (getline(chndomains, line)) {
-          std::vector<std::string> v;
-          split(line, sp, &v);
-          domains.push_back(v);
+      if (!files.at(i).empty()) {
+        std::ifstream chndomains(files.at(i));
+        if (chndomains.is_open()) {
+          while (getline(chndomains, line)) {
+            std::vector<std::string> v;
+            split(line, sp, &v);
+            domains.push_back(v);
+          }
+          chndomains.close();
+        } else {
+          std::cout << "Unable to open dns domain file " << files.at(i) << std::endl;
         }
-        chndomains.close();
-      } else {
-        std::cout << "Unable to open file" << std::endl;
       }
     }
     conf->domains = domains;
