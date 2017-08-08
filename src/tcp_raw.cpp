@@ -324,6 +324,7 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 
   if (es->socks_buf_used > BUFFER_SIZE) {
     es->lwip_blocked = 1;
+    ev_timer_start(EV_DEFAULT, &(es->block_ctx->watcher));
     return;
   }
 
