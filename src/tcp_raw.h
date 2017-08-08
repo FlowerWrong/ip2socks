@@ -4,6 +4,9 @@
 #ifndef LWIP_TCP_RAW_H
 #define LWIP_TCP_RAW_H
 
+#include "lwip/ip6.h"
+#include "ev.h"
+
 enum tcp_raw_states {
     ES_NONE = 0,
     ES_ACCEPTED,

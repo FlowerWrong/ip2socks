@@ -8,13 +8,12 @@
 #include <string.h>
 
 #include "socks5.h"
-#include "ev.h"
 #include "struct.h"
+#include "tcp_raw.h"
 
 #include "lwip/opt.h"
 #include "lwip/stats.h"
 #include "lwip/tcp.h"
-#include "tcp_raw.h"
 
 #if LWIP_TCP && LWIP_CALLBACK_API
 

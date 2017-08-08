@@ -6,13 +6,7 @@
 #include <string>
 #include <vector>
 
-#include <netinet/in.h>
-#include <arpa/inet.h>
-#include <memory.h>
-#include <time.h>
 
-#include <ev.h>
-#include <regex.h>
 #include "lwip/opt.h"
 #include "lwip/udp.h"
 #include "lwip/ip.h"
@@ -28,27 +22,12 @@
 
 #if LWIP_UDP
 
+static ev_tstamp timeout = 60.;
+
 static struct udp_pcb *udp_raw_pcb;
 #define container_of(ptr, type, member) ({      \
   const typeof( ((type *)0)->member ) *__mptr = (ptr);  \
   (type *)( (char *)__mptr - offsetof(type,member) );})
-
-struct udp_raw_state {
-    ev_io io;
-    int socks_tcp_fd; // just for udp relay via socks5
-    u8_t state;
-    u8_t retries;
-    struct udp_pcb *pcb;
-    struct sockaddr_in addr; // recvfrom addr
-    char addr_ip[INET_ADDRSTRLEN]; // origin sendto ip address
-    ssize_t addr_len;
-    u16_t udp_port; // origin sendto port
-};
-
-typedef struct {
-    char *buffer;
-    ssize_t length;
-} response;
 
 int tcp_dns_query(void *query, response *buffer, int len, u16_t dns_port) {
   int sock = socks5_connect(conf->socks_server, conf->socks_port);
@@ -77,6 +56,12 @@ static void free_dns_query(ev_io *watcher, struct udp_raw_state *es) {
   // close socks dns socket
   close(watcher->fd);
   ev_io_stop(EV_DEFAULT, watcher);
+
+  if (es->timeout_ctx->watcher.active != 0) {
+    ev_timer_stop(EV_DEFAULT, &(es->timeout_ctx->watcher));
+  }
+  free(es->timeout_ctx);
+
   free(es);
 }
 
@@ -98,6 +83,8 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
     free_dns_query(watcher, es);
     return;
   }
+
+  ev_timer_again(EV_A_ &(es->timeout_ctx->watcher));
 
   /* send received packet back to sender */
   ssize_t data_len = nread - 10;
@@ -135,6 +122,8 @@ static void dns_relay_cb(EV_P_ ev_io *watcher, int revents) {
     return;
   }
 
+  ev_timer_again(EV_A_ &(es->timeout_ctx->watcher));
+
   /* send received packet back to sender */
   struct pbuf *socksp = pbuf_alloc(PBUF_TRANSPORT, (uint16_t) nread, PBUF_RAM);
   memcpy(socksp->payload, buff, (size_t) nread);
@@ -157,6 +146,8 @@ static void tcp_dns_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   response *buffer = (response *) malloc(sizeof(response));
   buffer->buffer = static_cast<char *>(malloc(4096));
   buffer->length = recv(watcher->fd, buffer->buffer, 4096, 0);
+
+  ev_timer_again(EV_A_ &(es->timeout_ctx->watcher));
 
   if (buffer->length < 0) {
     printf("tcp dns query failed, len is %ld\n", buffer->length);
@@ -191,6 +182,14 @@ static void tcp_dns_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 
     free_dns_query(watcher, es);
   }
+}
+
+static void
+timeout_cb(struct ev_loop *loop, ev_timer *watcher, int revents) {
+  udp_timer_ctx *timeout_ctx = container_of(watcher, udp_timer_ctx, watcher);
+  struct udp_raw_state *es = timeout_ctx->raw_state;
+  printf("timeout, clean\n");
+  free_dns_query(&(es->io), es);
 }
 
 /**
@@ -275,6 +274,13 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       es->addr_len = addr_len;
       es->socks_tcp_fd = 0;
 
+      es->timeout_ctx = (udp_timer_ctx *) malloc(sizeof(udp_timer_ctx));
+      memset(es->timeout_ctx, 0, sizeof(udp_timer_ctx));
+      es->timeout_ctx->raw_state = es;
+
+      ev_timer_init(&(es->timeout_ctx->watcher), timeout_cb, timeout, 0.);
+      ev_timer_start(EV_DEFAULT, &(es->timeout_ctx->watcher));
+
       ev_io_init(&(es->io), dns_relay_cb, dns_fd, EV_READ);
       ev_io_start(EV_DEFAULT, &(es->io));
       pbuf_free(p);
@@ -323,6 +329,13 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     es->addr = socks_proxy_addr;
     es->addr_len = addr_len;
     es->socks_tcp_fd = socks_fd;
+
+    es->timeout_ctx = (udp_timer_ctx *) malloc(sizeof(udp_timer_ctx));
+    memset(es->timeout_ctx, 0, sizeof(udp_timer_ctx));
+    es->timeout_ctx->raw_state = es;
+
+    ev_timer_init(&(es->timeout_ctx->watcher), timeout_cb, timeout, 0.);
+    ev_timer_start(EV_DEFAULT, &(es->timeout_ctx->watcher));
 
     ev_io_init(&(es->io), tcp_dns_cb, socks_fd, EV_READ);
     ev_io_start(EV_DEFAULT, &(es->io));
@@ -391,6 +404,13 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       es->addr = dns_addr;
       es->addr_len = addr_len;
       es->socks_tcp_fd = 0;
+
+      es->timeout_ctx = (udp_timer_ctx *) malloc(sizeof(udp_timer_ctx));
+      memset(es->timeout_ctx, 0, sizeof(udp_timer_ctx));
+      es->timeout_ctx->raw_state = es;
+
+      ev_timer_init(&(es->timeout_ctx->watcher), timeout_cb, timeout, 0.);
+      ev_timer_start(EV_DEFAULT, &(es->timeout_ctx->watcher));
 
       ev_io_init(&(es->io), dns_relay_cb, dns_fd, EV_READ);
       ev_io_start(EV_DEFAULT, &(es->io));
@@ -548,6 +568,13 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   es->addr = socks_proxy_addr;
   es->addr_len = addr_len;
   es->socks_tcp_fd = socks_fd;
+
+  es->timeout_ctx = (udp_timer_ctx *) malloc(sizeof(udp_timer_ctx));
+  memset(es->timeout_ctx, 0, sizeof(udp_timer_ctx));
+  es->timeout_ctx->raw_state = es;
+
+  ev_timer_init(&(es->timeout_ctx->watcher), timeout_cb, timeout, 0.);
+  ev_timer_start(EV_DEFAULT, &(es->timeout_ctx->watcher));
 
   ev_io_init(&(es->io), udp_socks_relay_cb, udp_relay_fd, EV_READ);
   ev_io_start(EV_DEFAULT, &(es->io));
