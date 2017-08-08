@@ -25,6 +25,7 @@
 
 #if LWIP_UDP
 
+#define UDP_BUFFER_SIZE 4096
 
 typedef struct udp_timer_ctx {
     ev_timer watcher;
@@ -74,7 +75,7 @@ int tcp_dns_query(void *query, response *buffer, int len, u16_t dns_port) {
 
   // forward dns query
   send(sock, query, len, 0);
-  buffer->length = recv(sock, buffer->buffer, 4096, 0);
+  buffer->length = recv(sock, buffer->buffer, UDP_BUFFER_SIZE, 0);
   return sock;
 }
 
@@ -171,8 +172,8 @@ static void dns_relay_cb(EV_P_ ev_io *watcher, int revents) {
 static void tcp_dns_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
   struct udp_raw_state *es = container_of(watcher, struct udp_raw_state, io);
   response *buffer = (response *) malloc(sizeof(response));
-  buffer->buffer = static_cast<char *>(malloc(4096));
-  buffer->length = recv(watcher->fd, buffer->buffer, 4096, 0);
+  buffer->buffer = static_cast<char *>(malloc(UDP_BUFFER_SIZE));
+  buffer->length = recv(watcher->fd, buffer->buffer, UDP_BUFFER_SIZE, 0);
 
   ev_timer_again(EV_A_ &(es->timeout_ctx->watcher));
 
@@ -237,7 +238,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   if (strcmp("tcp", conf->dns_mode) == 0 && upcb->remote_fake_port == 53) {
     printf("Redirect dns query to tcp via socks 5\n");
     response *buffer = (response *) malloc(sizeof(response));
-    buffer->buffer = static_cast<char *>(malloc(4096));
+    buffer->buffer = static_cast<char *>(malloc(UDP_BUFFER_SIZE));
     char *query;
 
     pbuf_copy_partial(p, buffer->buffer, p->tot_len, 0);

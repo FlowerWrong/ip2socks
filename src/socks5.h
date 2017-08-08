@@ -15,7 +15,7 @@
 #include <errno.h>
 #include <arpa/inet.h>
 
-#define BUFFER_SIZE 1500
+#define BUFFER_SIZE 1460
 
 // socks5 version
 #define SOCKS5_VERSION 0x05

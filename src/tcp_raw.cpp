@@ -310,6 +310,7 @@ static void
 block_cb(struct ev_loop *loop, ev_timer *watcher, int revents) {
   timer_ctx *block_ctx = container_of(watcher, timer_ctx, watcher);
   struct tcp_raw_state *es = block_ctx->raw_state;
+  write_and_output(es->pcb, es);
   es->lwip_blocked = 0;
   printf("Reset lwip block\n");
   ev_timer_stop(EV_DEFAULT, watcher);
