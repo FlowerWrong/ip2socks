@@ -62,6 +62,17 @@ tcp_raw_close(struct tcp_pcb *tpcb, struct tcp_raw_state *es) {
       }
     }
 
+
+    if (es->block_ctx->watcher.active != 0) {
+      ev_timer_stop(EV_DEFAULT, &(es->block_ctx->watcher));
+    }
+    if (es->timeout_ctx->watcher.active != 0) {
+      ev_timer_stop(EV_DEFAULT, &(es->timeout_ctx->watcher));
+    }
+
+    free(es->block_ctx);
+    free(es->timeout_ctx);
+
     tcp_raw_free(es);
   }
 }
@@ -293,6 +304,7 @@ timeout_cb(struct ev_loop *loop, ev_timer *watcher, int revents) {
   struct tcp_raw_state *es = timeout_ctx->raw_state;
   write_and_output(es->pcb, es);
   printf("timeout, clean\n");
+  free_all(loop, &(es->io), es, es->pcb);
 }
 
 static void
@@ -301,6 +313,7 @@ block_cb(struct ev_loop *loop, ev_timer *watcher, int revents) {
   struct tcp_raw_state *es = block_ctx->raw_state;
   es->lwip_blocked = 0;
   printf("Reset lwip block\n");
+  ev_timer_stop(EV_DEFAULT, watcher);
 }
 
 
