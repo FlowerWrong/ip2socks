@@ -19,6 +19,10 @@ fi
 route add -net 128.0.0.0 $TUN_IP -netmask 128.0.0.0
 route add -net 0.0.0.0 $TUN_IP -netmask 128.0.0.0
 
+# You must add your none proxy domain dns server to direct route
+route add -host 114.114.114.114 $GATEWAY_IP
+route add -host 223.5.5.5 $GATEWAY_IP
+
 # remote server
 # TODO just edit it with yours
 route add -host 47.90.32.252 $GATEWAY_IP

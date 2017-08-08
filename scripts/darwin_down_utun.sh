@@ -19,6 +19,10 @@ fi
 route delete -net 128.0.0.0 $TUN_IP -netmask 128.0.0.0
 route delete -net 0.0.0.0 $TUN_IP -netmask 128.0.0.0
 
+# You must add your none proxy domain dns server to direct route
+route delete -host 114.114.114.114 $GATEWAY_IP
+route delete -host 223.5.5.5 $GATEWAY_IP
+
 # remote server
 # TODO just edit it with yours
 route delete -host 47.90.32.252 $GATEWAY_IP

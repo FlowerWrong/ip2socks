@@ -21,6 +21,10 @@ EOF
 ip route add 0.0.0.0/1 via "$TUN_IP"
 ip route add 128.0.0.0/1 via "$TUN_IP"
 
+# You must add your none proxy domain dns server to direct route
+ip route add 114.114.114.114 via $GATEWAY_IP
+ip route add 223.5.5.5 via $GATEWAY_IP
+
 # remote server
 # TODO just edit it with yours
 ip route add 47.90.32.252 via $GATEWAY_IP

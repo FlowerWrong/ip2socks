@@ -70,6 +70,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 ## TODO
 
 * [ ] dnsmasq `address=/test.com/127.0.0.1` support
+* [ ] domain, domain_keyword, domain_suffix (ip_cidr, geoip) for custom_domain_server file support
 * [x] timeout
 * [ ] log
 * [ ] fake DNS server
