@@ -85,7 +85,7 @@ static void free_dns_query(ev_io *watcher, struct udp_raw_state *es) {
   close(watcher->fd);
   ev_io_stop(EV_DEFAULT, watcher);
 
-  if (es->timeout_ctx->watcher.active != 0) {
+  if (es->timeout_ctx->watcher.active != ERR_OK) {
     ev_timer_stop(EV_DEFAULT, &(es->timeout_ctx->watcher));
   }
   free(es->timeout_ctx);
@@ -127,7 +127,7 @@ static void udp_socks_relay_cb(EV_P_ ev_io *watcher, int revents) {
   pbuf_free(socksp);
   close(es->socks_tcp_fd);
   free_dns_query(watcher, es);
-  if (e != 0) {
+  if (e != ERR_OK) {
     printf("udp_sendto %d %s\n", e, lwip_strerr(e));
   }
 }
@@ -163,7 +163,7 @@ static void dns_relay_cb(EV_P_ ev_io *watcher, int revents) {
   /* free the pbuf */
   pbuf_free(socksp);
   free_dns_query(watcher, es);
-  if (e != 0) {
+  if (e != ERR_OK) {
     printf("udp_sendto %d %s\n", e, lwip_strerr(e));
     return;
   }
@@ -202,13 +202,17 @@ static void tcp_dns_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
     struct in_addr ip;
     ip.s_addr = inet_addr(es->addr_ip);
 
-    udp_sendto(es->pcb, socksp, reinterpret_cast<const ip_addr_t *>(&ip), es->udp_port);
+    err_t e = udp_sendto(es->pcb, socksp, reinterpret_cast<const ip_addr_t *>(&ip), es->udp_port);
     pbuf_free(socksp);
 
     free(buffer->buffer);
     free(buffer);
 
     free_dns_query(watcher, es);
+    if (e != ERR_OK) {
+      printf("udp_sendto %d %s in tcp_dns_cb\n", e, lwip_strerr(e));
+      return;
+    }
   }
 }
 
@@ -413,6 +417,8 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
         return;
       }
       int addr_len = sizeof(sockaddr_in);
+
+      // FIXME EMSGSIZE
       ssize_t nread = sendto(dns_fd, buf, p->tot_len, 0, (struct sockaddr *) (&dns_addr),
                              static_cast<socklen_t>(addr_len));
       if (nread < 0) {
