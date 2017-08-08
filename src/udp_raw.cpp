@@ -256,7 +256,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     // TODO cache
     for (int i = 0; i < conf->domains.size(); ++i) {
-      if (has_suffix(cppdomain, conf->domains.at(i).at(1))) {
+      if (cppdomain == conf->domains.at(i).at(1)) {
         matched = true;
         dns_server = conf->domains.at(i).at(2);
         break;
@@ -370,24 +370,23 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     return;
   }
 
+  char buf[TCP_WND];
+  pbuf_copy_partial(p, buf, p->tot_len, 0);
+
+  char *domain = get_query_domain(reinterpret_cast<const u_char *>(buf), p->tot_len, stderr);
+  if (domain == NULL) {
+    return;
+  }
+
+  std::string cppdomain(domain);
   if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
-    char buf[TCP_WND];
-    pbuf_copy_partial(p, buf, p->tot_len, 0);
-
-    char *domain = get_query_domain(reinterpret_cast<const u_char *>(buf), p->tot_len, stderr);
-    if (domain == NULL) {
-      return;
-    }
-
-    std::string cppdomain(domain);
-
     bool matched = false;
     std::string dns_server("114.114.114.114");
     std::string sp("/");
 
     // TODO cache
     for (int i = 0; i < conf->domains.size(); ++i) {
-      if (has_suffix(cppdomain, conf->domains.at(i).at(1))) {
+      if (cppdomain == conf->domains.at(i).at(1)) {
         matched = true;
         dns_server = conf->domains.at(i).at(2);
         break;
@@ -456,10 +455,6 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   es->udp_port = port;
   inet_ntop(AF_INET, addr, es->addr_ip, INET_ADDRSTRLEN);
 
-
-  char buf[TCP_WND];
-  pbuf_copy_partial(p, buf, p->tot_len, 0);
-
   int socks_fd = socks5_connect(conf->socks_server, conf->socks_port);
   if (socks_fd < 1) {
     printf("socks5 connect failed\n");
@@ -504,7 +499,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
   if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
     inet_aton(conf->remote_dns_server, &(saddr_in->sin_addr));
-    printf("UDP redirect to remote dns server %s\n", conf->remote_dns_server);
+    printf("UDP dns query %s redirect to remote dns server %s\n", cppdomain.c_str(), conf->remote_dns_server);
   } else {
     inet_aton(remote_fake_ip_str, &(saddr_in->sin_addr));
     printf("UDP via socks 5 udp tunnel to %s\n", remote_fake_ip_str);
