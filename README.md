@@ -69,8 +69,9 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 
 ## TODO
 
+* [ ] `block` rule support, just close it
 * [ ] dnsmasq `address=/test.com/127.0.0.1` support
-* [x] domain, domain_keyword, domain_suffix (ip_cidr, geoip) for custom_domain_server file support
+* [x] `domain`, `domain_keyword`, `domain_suffix` (ip_cidr, geoip) rule support
 * [x] timeout
 * [ ] log
 * [ ] fake DNS server
