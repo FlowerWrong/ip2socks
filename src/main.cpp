@@ -285,9 +285,11 @@ main(int argc, char **argv) {
         std::ifstream chndomains(files.at(i));
         if (chndomains.is_open()) {
           while (getline(chndomains, line)) {
-            std::vector<std::string> v;
-            split(line, sp, &v);
-            domains.push_back(v);
+            if (!line.empty() && line.substr(0, 1) != "#") {
+              std::vector<std::string> v;
+              split(line, sp, &v);
+              domains.push_back(v);
+            }
           }
           chndomains.close();
         } else {
