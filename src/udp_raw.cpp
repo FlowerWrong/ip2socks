@@ -279,6 +279,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     }
 
     if (blocked) {
+      std::cout << cppdomain << " was blocked!!!" << std::endl;
       free(buffer->buffer);
       free(buffer);
       pbuf_free(p);
@@ -448,6 +449,10 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
             break;
           }
         }
+      }
+
+      if (blocked) {
+        std::cout << cppdomain << " was blocked!!!" << std::endl;
       }
     }
 
