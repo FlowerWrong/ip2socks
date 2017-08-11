@@ -21,6 +21,7 @@
 #include "udp_raw.h"
 #include "struct.h"
 #include "socks5.h"
+#include "util.h"
 
 #if LWIP_UDP
 
@@ -235,10 +236,25 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     // TODO cache
     for (int i = 0; i < conf->domains.size(); ++i) {
-      if (cppdomain == conf->domains.at(i).at(1)) {
-        matched = true;
-        dns_server = conf->domains.at(i).at(2);
-        break;
+      std::string rule(conf->domains.at(i).at(0).c_str());
+      if (rule == "server=" || rule == "domain=") {
+        if (cppdomain == conf->domains.at(i).at(1)) {
+          matched = true;
+          dns_server = conf->domains.at(i).at(2);
+          break;
+        }
+      } else if (rule == "domain_keyword=") {
+        if (cppdomain.find(conf->domains.at(i).at(1), 0) != std::string::npos) {
+          matched = true;
+          dns_server = conf->domains.at(i).at(2);
+          break;
+        }
+      } else if (rule == "domain_suffix=  ") {
+        if (end_with(cppdomain, conf->domains.at(i).at(1))) {
+          matched = true;
+          dns_server = conf->domains.at(i).at(2);
+          break;
+        }
       }
     }
 
@@ -366,10 +382,25 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
     // TODO cache
     for (int i = 0; i < conf->domains.size(); ++i) {
-      if (cppdomain == conf->domains.at(i).at(1)) {
-        matched = true;
-        dns_server = conf->domains.at(i).at(2);
-        break;
+      std::string rule(conf->domains.at(i).at(0).c_str());
+      if (rule == "server=" || rule == "domain=") {
+        if (cppdomain == conf->domains.at(i).at(1)) {
+          matched = true;
+          dns_server = conf->domains.at(i).at(2);
+          break;
+        }
+      } else if (rule == "domain_keyword=") {
+        if (cppdomain.find(conf->domains.at(i).at(1), 0) != std::string::npos) {
+          matched = true;
+          dns_server = conf->domains.at(i).at(2);
+          break;
+        }
+      } else if (rule == "domain_suffix=") {
+        if (end_with(cppdomain, conf->domains.at(i).at(1))) {
+          matched = true;
+          dns_server = conf->domains.at(i).at(2);
+          break;
+        }
       }
     }
 
