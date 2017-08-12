@@ -7,6 +7,7 @@
 
 #include "lwip/ip6.h"
 #include "ev.h"
+#include "socket_util.h"
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
@@ -295,6 +296,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       dns_addr.sin_port = htons(53);
 
       int dns_fd = socket(AF_INET, SOCK_DGRAM, 0);
+      setnonblocking(dns_fd);
 
       sockaddr_in localAddr;
       memset(&localAddr, 0, sizeof(localAddr));
@@ -470,6 +472,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       dns_addr.sin_port = htons(53);
 
       int dns_fd = socket(AF_INET, SOCK_DGRAM, 0);
+      setnonblocking(dns_fd);
 
       sockaddr_in localAddr;
       memset(&localAddr, 0, sizeof(localAddr));
@@ -640,6 +643,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   memcpy(buff + idx, buf, p->tot_len);
 
   int udp_relay_fd = socket(AF_INET, SOCK_DGRAM, 0);
+  setnonblocking(udp_relay_fd);
 
   sockaddr_in localAddr;
   memset(&localAddr, 0, sizeof(localAddr));

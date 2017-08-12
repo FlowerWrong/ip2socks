@@ -66,6 +66,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [x] OSX receive data too often, eg: `brew update`, `brew upgrade`
 * [x] if `ERR_QUIC_PROTOCOL_ERROR`, go to `chrome://flags/` disable quic
 * [x] ns_initparse `Message too long` bug
+* [x] (libev) select: Invalid argument with setnoneblocking [socket-options-so-reuseaddr-and-so-reuseport](https://stackoverflow.com/questions/14388706/socket-options-so-reuseaddr-and-so-reuseport-how-do-they-differ-do-they-mean-t)
 
 ## TODO
 

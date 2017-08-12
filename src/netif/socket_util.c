@@ -3,6 +3,7 @@
 //
 
 #include <fcntl.h>
+#include "socket_util.h"
 
 int setnonblocking(int fd)
 {
