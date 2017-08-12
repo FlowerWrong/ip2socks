@@ -214,7 +214,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
   struct udp_raw_state *es;
   LWIP_UNUSED_ARG(arg);
 
-  upcb->so_options |= SO_REUSEADDR;
+  // upcb->so_options |= SO_REUSEADDR;
 
   if (strcmp("tcp", conf->dns_mode) == 0 && upcb->remote_fake_port == 53) {
     printf("Redirect dns query to tcp via socks 5\n");
