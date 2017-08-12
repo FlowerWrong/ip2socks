@@ -205,6 +205,8 @@ main(int argc, char **argv) {
                 datap = &conf->remote_dns_port;
               } else if (strcmp(tk, "local_dns_port") == 0) {
                 datap = &conf->local_dns_port;
+              } else if (strcmp(tk, "relay_none_dns_packet_with_udp") == 0) {
+                datap = &conf->relay_none_dns_packet_with_udp;
               } else if (strcmp(tk, "custom_domian_server_file") == 0) {
                 datap = &conf->custom_domian_server_file;
               } else if (strcmp(tk, "gw") == 0) {

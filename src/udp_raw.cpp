@@ -234,50 +234,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     bool matched = false;
     bool blocked = false;
     std::string dns_server("114.114.114.114");
-    std::string sp("/");
-
-    // TODO cache
-    for (int i = 0; i < conf->domains.size(); ++i) {
-      std::string rule(conf->domains.at(i).at(0).c_str());
-      if (rule == "server=" || rule == "domain=") {
-        if (cppdomain == conf->domains.at(i).at(1)) {
-          matched = true;
-          dns_server = conf->domains.at(i).at(2);
-          break;
-        }
-      } else if (rule == "domain_keyword=") {
-        if (cppdomain.find(conf->domains.at(i).at(1), 0) != std::string::npos) {
-          matched = true;
-          dns_server = conf->domains.at(i).at(2);
-          break;
-        }
-      } else if (rule == "domain_suffix=") {
-        if (end_with(cppdomain, conf->domains.at(i).at(1))) {
-          matched = true;
-          dns_server = conf->domains.at(i).at(2);
-          break;
-        }
-      } else if (rule == "block=") {
-        std::string block_rule(conf->domains.at(i).at(2).c_str());
-
-        if (block_rule == "domain") {
-          if (cppdomain == conf->domains.at(i).at(1)) {
-            blocked = true;
-            break;
-          }
-        } else if (block_rule == "domain_keyword") {
-          if (cppdomain.find(conf->domains.at(i).at(1), 0) != std::string::npos) {
-            blocked = true;
-            break;
-          }
-        } else if (block_rule == "domain_suffix") {
-          if (end_with(cppdomain, conf->domains.at(i).at(1))) {
-            blocked = true;
-            break;
-          }
-        }
-      }
-    }
+    match_dns_rule(conf->domains, cppdomain, &matched, &dns_server, &blocked);
 
     if (blocked) {
       std::cout << cppdomain << " was blocked!!!" << std::endl;
@@ -410,53 +367,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       return;
     }
     std::string cppdomain(domain);
-
-    // TODO cache
-    for (int i = 0; i < conf->domains.size(); ++i) {
-      std::string rule(conf->domains.at(i).at(0).c_str());
-      if (rule == "server=" || rule == "domain=") {
-        if (cppdomain == conf->domains.at(i).at(1)) {
-          matched = true;
-          dns_server = conf->domains.at(i).at(2);
-          break;
-        }
-      } else if (rule == "domain_keyword=") {
-        if (cppdomain.find(conf->domains.at(i).at(1), 0) != std::string::npos) {
-          matched = true;
-          dns_server = conf->domains.at(i).at(2);
-          break;
-        }
-      } else if (rule == "domain_suffix=") {
-        if (end_with(cppdomain, conf->domains.at(i).at(1))) {
-          matched = true;
-          dns_server = conf->domains.at(i).at(2);
-          break;
-        }
-      } else if (rule == "block=") {
-        std::string block_rule(conf->domains.at(i).at(2).c_str());
-
-        if (block_rule == "domain") {
-          if (cppdomain == conf->domains.at(i).at(1)) {
-            blocked = true;
-            break;
-          }
-        } else if (block_rule == "domain_keyword") {
-          if (cppdomain.find(conf->domains.at(i).at(1), 0) != std::string::npos) {
-            blocked = true;
-            break;
-          }
-        } else if (block_rule == "domain_suffix") {
-          if (end_with(cppdomain, conf->domains.at(i).at(1))) {
-            blocked = true;
-            break;
-          }
-        }
-      }
-
-      if (blocked) {
-        std::cout << cppdomain << " was blocked!!!" << std::endl;
-      }
-    }
+    match_dns_rule(conf->domains, cppdomain, &matched, &dns_server, &blocked);
 
     if (blocked) {
       pbuf_free(p);
