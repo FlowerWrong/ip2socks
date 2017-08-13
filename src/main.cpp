@@ -30,6 +30,29 @@
 #include "udp_raw.h"
 #include "tcp_raw.h"
 
+// lua
+#include "lua.hpp"
+#include "lauxlib.h"
+#include "lualib.h"
+
+static lua_State *L = NULL;
+
+int ladd(int x, int y) {
+  int sum;
+
+  lua_getglobal(L, "add");
+  lua_pushinteger(L, x);
+  lua_pushinteger(L, y);
+  lua_call(L, 2, 1);
+
+  sum = (int) lua_tointeger(L, -1);
+
+  lua_pop(L, 1);
+
+  return sum;
+}
+
+
 /* lwip host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
 
@@ -127,6 +150,33 @@ main(int argc, char **argv) {
   }
 
   printf("config file %s, on shell file %s, down shell file %s\n", config_file, onshell_file, downshell_file);
+
+
+  /**
+   * lua
+   */
+  L = luaL_newstate();
+  luaL_openlibs(L);
+  int ret = luaL_dofile(L, "./src/sum.lua");
+  if (ret) {
+    const char *pErrorMsg = lua_tostring(L, -1);
+    std::cout << pErrorMsg << std::endl;
+    lua_close(L);
+    return -1;
+  }
+  lua_getglobal(L, "add");
+  /* the first argument */
+  lua_pushnumber(L, 41);
+  /* the second argument */
+  lua_pushnumber(L, 22);
+  /* call the function with 2 arguments, return 1 result */
+  lua_call(L, 2, 1);
+  /* get the result */
+  int sum = (int) lua_tonumber(L, -1);
+  lua_pop(L, 1);
+  /* print the result */
+  printf("The result is %d\n", sum);
+  lua_close(L);
 
 
   /**

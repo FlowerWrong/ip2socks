@@ -7,10 +7,12 @@ set(LIBEVDIR libev)
 set(LIBYAML libyaml)
 set(LWIPDIR lwip/src)
 set(LWIPARCH port)
+set(LUADIR lua)
 
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
 include(cmake/libev.cmake)
+include(cmake/liblua.cmake)
 
 include_directories(
     ${LWIPDIR}/include
@@ -21,6 +23,8 @@ include_directories(
     ${LIBYAML}/include
     ${LIBYAML}/win32
     ${LIBYAML}/src
+
+    ${LUADIR}/src
 
     src
     src/netif
@@ -58,4 +62,5 @@ endif ()
 add_executable(ip2socks ${MAIN_SOURCE_FILES})
 
 target_link_libraries(ip2socks yaml)
+target_link_libraries(ip2socks lua)
 target_link_libraries(ip2socks resolv)
