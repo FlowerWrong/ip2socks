@@ -429,6 +429,15 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
       return;
     }
   }
+  if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
+    // printf("UDP DNS query\n");
+  } else {
+    if (strcmp("false", conf->relay_none_dns_packet_with_udp) == 0) {
+      pbuf_free(p);
+      return;
+    }
+  }
+
 
 
   es = (struct udp_raw_state *) malloc(sizeof(struct udp_raw_state));
