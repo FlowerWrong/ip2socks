@@ -8,17 +8,21 @@ set(LIBYAML libyaml)
 set(LWIPDIR lwip/src)
 set(LWIPARCH port)
 set(LUADIR lua)
+set(LIB_DUKTAPE_DIR duktape)
 
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
 include(cmake/libev.cmake)
 include(cmake/liblua.cmake)
+include(cmake/libduktape.cmake)
 
 include_directories(
     ${LWIPDIR}/include
     ${LWIPARCH}/include
 
     ${LIBEVDIR}
+
+    ${LIB_DUKTAPE_DIR}/dist/src
 
     ${LIBYAML}/include
     ${LIBYAML}/win32
@@ -40,6 +44,8 @@ set(MAIN_SOURCE_FILES
     src/netif/socket_util.c
 
     ${LIBEVDIR}/ev.c
+
+    ${DUKTAPE_SOURCE_FILES}
 
     src/dns/dump_dns.c
 
