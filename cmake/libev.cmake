@@ -29,4 +29,4 @@ check_function_exists(eventfd HAVE_EVENTFD)
 check_function_exists(nanosleep HAVE_NANOSLEEP)
 
 
-configure_file(${LIBEVDIR}/config.h.cmake ${LIBEVDIR}/config.h)
+configure_file(cmake/libev_config.h.cmake ${LIBEVDIR}/config.h)
