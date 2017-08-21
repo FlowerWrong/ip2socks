@@ -39,9 +39,11 @@
 #cmakedefine HAVE_NANOSLEEP 1
 
 /* Define to 1 if you have the `poll' function. */
+#cmakedefine HAVE_POLL 1
 /* #undef HAVE_POLL */
 
 /* Define to 1 if you have the <poll.h> header file. */
+#cmakedefine HAVE_POLL_H 1
 /* #undef HAVE_POLL_H */
 
 /* Define to 1 if you have the `port_create' function. */

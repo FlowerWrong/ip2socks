@@ -33,6 +33,7 @@ include_directories(
     src
     src/netif
     src/dns
+    src/duktape_socket
 )
 
 
@@ -48,6 +49,8 @@ set(MAIN_SOURCE_FILES
     ${DUKTAPE_SOURCE_FILES}
 
     src/dns/dump_dns.c
+    
+    src/duktape_socket/usocket.c
 
     src/struct.cpp
     src/socks5.cpp
