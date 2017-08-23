@@ -219,7 +219,6 @@ main(int argc, char **argv) {
 
     socket_register(ctx);
 
-    duk_eval_string(ctx, "var fd = Socket.connect('127.0.0.1', '1080');print(fd);");
     duk_eval_string(ctx, "print('2+3=' + adder(2, 3));");
     duk_pop(ctx);  /* pop eval result */
     duk_destroy_heap(ctx);
