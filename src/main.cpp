@@ -32,6 +32,7 @@
 
 // js
 #include "duktape.h"
+#include "duktape_socket/socket.h"
 
 duk_context *ctx;
 
@@ -210,14 +211,19 @@ main(int argc, char **argv) {
    * js duktape engine
    */
   ctx = duk_create_heap_default();
-  duk_push_c_function(ctx, native_print, DUK_VARARGS);
-  duk_put_global_string(ctx, "print");
-  duk_push_c_function(ctx, native_adder, DUK_VARARGS);
-  duk_put_global_string(ctx, "adder");
-  duk_eval_string(ctx, "print('Hello world!');");
-  duk_eval_string(ctx, "print('2+3=' + adder(2, 3));");
-  duk_pop(ctx);  /* pop eval result */
-  duk_destroy_heap(ctx);
+  if (ctx) {
+    duk_push_c_function(ctx, native_print, DUK_VARARGS);
+    duk_put_global_string(ctx, "print");
+    duk_push_c_function(ctx, native_adder, DUK_VARARGS);
+    duk_put_global_string(ctx, "adder");
+
+    socket_register(ctx);
+
+    duk_eval_string(ctx, "var fd = Socket.connect('127.0.0.1', '1080');print(fd);");
+    duk_eval_string(ctx, "print('2+3=' + adder(2, 3));");
+    duk_pop(ctx);  /* pop eval result */
+    duk_destroy_heap(ctx);
+  }
 
 
   /**
