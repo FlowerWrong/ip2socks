@@ -30,6 +30,10 @@
 #include "udp_raw.h"
 #include "tcp_raw.h"
 
+// mruby
+#include <mruby.h>
+#include <mruby/compile.h>
+
 // js
 #include "duktape.h"
 #include "duktape_socket/socket.h"
@@ -178,6 +182,13 @@ main(int argc, char **argv) {
   }
 
   printf("config file %s, on shell file %s, down shell file %s\n", config_file, onshell_file, downshell_file);
+
+
+  mrb_state *mrb = mrb_open();
+  if (!mrb) { /* handle error */ }
+  puts("Executing Ruby code from C!");
+  mrb_load_string(mrb, "p 'hello world!'");
+  mrb_close(mrb);
 
 
   /**

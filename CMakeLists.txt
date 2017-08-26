@@ -9,6 +9,7 @@ set(LWIPDIR lwip/src)
 set(LWIPARCH port)
 set(LUADIR lua)
 set(LIB_DUKTAPE_DIR duktape)
+set(LIB_MRUBY_DIR mruby)
 
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
@@ -23,6 +24,8 @@ include_directories(
     ${LIBEVDIR}
 
     ${LIB_DUKTAPE_DIR}/dist/src
+
+    ${LIB_MRUBY_DIR}/include
 
     ${LIBYAML}/include
     ${LIBYAML}/win32
@@ -73,3 +76,5 @@ add_executable(ip2socks ${MAIN_SOURCE_FILES})
 target_link_libraries(ip2socks yaml)
 target_link_libraries(ip2socks lua)
 target_link_libraries(ip2socks resolv)
+
+target_link_libraries(ip2socks ${CMAKE_SOURCE_DIR}/${LIB_MRUBY_DIR}/build/host/lib/libmruby.a)
