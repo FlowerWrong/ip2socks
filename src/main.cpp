@@ -188,6 +188,11 @@ main(int argc, char **argv) {
   if (!mrb) { /* handle error */ }
   puts("Executing Ruby code from C!");
   mrb_load_string(mrb, "p 'hello world!'");
+  FILE *mruby_file = fopen("./src/loop.rb", "r");
+  if (mruby_file) {
+    mrb_load_file(mrb, mruby_file);
+    fclose(mruby_file);
+  }
   mrb_close(mrb);
 
 
