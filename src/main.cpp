@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include <string>
 
 #include "ev.h"
 #include "yaml.h"
@@ -34,57 +33,6 @@
 #include <mruby.h>
 #include <mruby/compile.h>
 #include "mruby_ev/mrev.h"
-
-// js
-#include "duktape.h"
-#include "duktape_socket/socket.h"
-
-duk_context *ctx;
-
-static duk_ret_t native_print(duk_context *ctx) {
-  duk_push_string(ctx, " ");
-  duk_insert(ctx, 0);
-  duk_join(ctx, duk_get_top(ctx) - 1);
-  printf("%s\n", duk_safe_to_string(ctx, -1));
-  return 0;
-}
-
-static duk_ret_t native_adder(duk_context *ctx) {
-  int i;
-  int n = duk_get_top(ctx);  /* #args */
-  double res = 0.0;
-
-  for (i = 0; i < n; i++) {
-    res += duk_to_number(ctx, i);
-  }
-
-  duk_push_number(ctx, res);
-  return 1;  /* one return value */
-}
-
-
-// lua
-#include "lua.hpp"
-#include "lauxlib.h"
-#include "lualib.h"
-
-static lua_State *L = NULL;
-
-int ladd(int x, int y) {
-  int sum;
-
-  lua_getglobal(L, "add");
-  lua_pushinteger(L, x);
-  lua_pushinteger(L, y);
-  lua_call(L, 2, 1);
-
-  sum = (int) lua_tointeger(L, -1);
-
-  lua_pop(L, 1);
-
-  return sum;
-}
-
 
 /* lwip host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
@@ -185,6 +133,9 @@ main(int argc, char **argv) {
   printf("config file %s, on shell file %s, down shell file %s\n", config_file, onshell_file, downshell_file);
 
 
+  /**
+   * mruby
+   */
   mrb_state *mrb = mrb_open();
   if (!mrb) { /* handle error */ }
   mrb_c_and_ruby_extension_example_gem_init(mrb);
@@ -197,51 +148,6 @@ main(int argc, char **argv) {
     fclose(mruby_file);
   }
   mrb_close(mrb);
-
-
-  /**
-   * lua
-   */
-  L = luaL_newstate();
-  luaL_openlibs(L);
-  int ret = luaL_dofile(L, "./src/sum.lua");
-  if (ret) {
-    const char *pErrorMsg = lua_tostring(L, -1);
-    std::cout << pErrorMsg << std::endl;
-    lua_close(L);
-    return -1;
-  }
-  lua_getglobal(L, "add");
-  /* the first argument */
-  lua_pushnumber(L, 41);
-  /* the second argument */
-  lua_pushnumber(L, 22);
-  /* call the function with 2 arguments, return 1 result */
-  lua_call(L, 2, 1);
-  /* get the result */
-  int sum = (int) lua_tonumber(L, -1);
-  lua_pop(L, 1);
-  /* print the result */
-  printf("The result is %d\n", sum);
-  lua_close(L);
-
-
-  /**
-   * js duktape engine
-   */
-  ctx = duk_create_heap_default();
-  if (ctx) {
-    duk_push_c_function(ctx, native_print, DUK_VARARGS);
-    duk_put_global_string(ctx, "print");
-    duk_push_c_function(ctx, native_adder, DUK_VARARGS);
-    duk_put_global_string(ctx, "adder");
-
-    socket_register(ctx);
-
-    duk_eval_string(ctx, "print('2+3=' + adder(2, 3));");
-    duk_pop(ctx);  /* pop eval result */
-    duk_destroy_heap(ctx);
-  }
 
 
   /**
