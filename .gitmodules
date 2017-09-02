@@ -10,9 +10,6 @@
 [submodule "scripts/dnsmasq-china-list"]
 	path = scripts/dnsmasq-china-list
 	url = git@github.com:felixonmars/dnsmasq-china-list.git
-[submodule "duktape"]
-	path = duktape
-	url = git@github.com:svaarala/duktape.git
 [submodule "mruby"]
 	path = mruby
 	url = git@github.com:mruby/mruby.git
