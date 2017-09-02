@@ -33,6 +33,7 @@
 // mruby
 #include <mruby.h>
 #include <mruby/compile.h>
+#include "mruby_ev/mrev.h"
 
 // js
 #include "duktape.h"
@@ -186,8 +187,10 @@ main(int argc, char **argv) {
 
   mrb_state *mrb = mrb_open();
   if (!mrb) { /* handle error */ }
+  mrb_c_and_ruby_extension_example_gem_init(mrb);
   puts("Executing Ruby code from C!");
   mrb_load_string(mrb, "p 'hello world!'");
+  mrb_load_string(mrb, "CRubyExtension.c_method");
   FILE *mruby_file = fopen("./src/loop.rb", "r");
   if (mruby_file) {
     mrb_load_file(mrb, mruby_file);

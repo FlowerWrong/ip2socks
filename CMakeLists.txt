@@ -37,6 +37,7 @@ include_directories(
     src/netif
     src/dns
     src/duktape_socket
+    src/mruby_ev
 )
 
 
@@ -54,6 +55,8 @@ set(MAIN_SOURCE_FILES
     src/dns/dump_dns.c
 
     src/duktape_socket/socket.c
+
+    src/mruby_ev/mrev.c
 
     src/struct.cpp
     src/socks5.cpp
