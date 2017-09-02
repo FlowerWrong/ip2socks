@@ -53,7 +53,3 @@ librdns.so.*
 *.o
 *.out
 *.cbp
-
-
-# lua
-liblua.dylib.dSYM/

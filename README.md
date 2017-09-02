@@ -25,10 +25,10 @@ vagrant ssh
 #### Compile with C++ 11 and cmake
 
 ```bash
-# build duktape
-pip2 install PyYAML
-cd duktape
-python2 util/dist.py
+# build mruby
+cd mruby
+make test
+cd ..
 
 cmake .
 make
