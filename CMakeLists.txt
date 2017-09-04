@@ -35,11 +35,11 @@ include_directories(
 set(MAIN_SOURCE_FILES
     ${LWIP_SOURCE_FILES}
 
+    ${LIBEVDIR}/ev.c
+
     # patch files
     src/netif/tunif.c
     src/netif/socket_util.c
-
-    ${LIBEVDIR}/ev.c
 
     src/dns/dump_dns.c
 

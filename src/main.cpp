@@ -140,6 +140,7 @@ main(int argc, char **argv) {
   if (!mrb) { /* handle error */ }
   mrb_mrev_gem_init(mrb);
   mrb_load_string(mrb, "Mrev.hello_world");
+  mrb_load_string(mrb, "Mrev.blk { p 'blk hello!!!' }");
   FILE *mruby_file = fopen("./src/dns.rb", "r");
   if (mruby_file) {
     mrb_load_file(mrb, mruby_file);
