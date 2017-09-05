@@ -25,9 +25,13 @@ vagrant ssh
 #### Compile with C++ 11 and cmake
 
 ```bash
-# build mruby
-cd mruby
-make test
+# build ruby
+cd ruby
+autoconf
+./configure --enable-shared --disable-install-doc --prefix=ip2socks/build/ruby
+make
+make install
+make clean
 cd ..
 
 cmake .

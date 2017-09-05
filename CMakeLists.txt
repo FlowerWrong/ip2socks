@@ -7,7 +7,8 @@ set(LIBEVDIR libev)
 set(LIBYAML libyaml)
 set(LWIPDIR lwip/src)
 set(LWIPARCH port)
-set(LIB_MRUBY_DIR mruby)
+
+set(LIB_RUBY_DIR ruby)
 
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
@@ -19,7 +20,8 @@ include_directories(
 
     ${LIBEVDIR}
 
-    ${LIB_MRUBY_DIR}/include
+    ${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0
+    ${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0/x86_64-darwin16
 
     ${LIBYAML}/include
     ${LIBYAML}/win32
@@ -28,7 +30,6 @@ include_directories(
     src
     src/netif
     src/dns
-    src/mruby_ev
 )
 
 
@@ -42,8 +43,6 @@ set(MAIN_SOURCE_FILES
     src/netif/socket_util.c
 
     src/dns/dump_dns.c
-
-    src/mruby_ev/mrev.c
 
     src/struct.cpp
     src/socks5.cpp
@@ -66,4 +65,4 @@ add_executable(ip2socks ${MAIN_SOURCE_FILES})
 target_link_libraries(ip2socks yaml)
 target_link_libraries(ip2socks resolv)
 
-target_link_libraries(ip2socks ${CMAKE_SOURCE_DIR}/${LIB_MRUBY_DIR}/build/host/lib/libmruby.a)
+target_link_libraries(ip2socks ${PROJECT_SOURCE_DIR}/build/ruby/lib/libruby.2.5.0.dylib)

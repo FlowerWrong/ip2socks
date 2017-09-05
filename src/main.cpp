@@ -29,10 +29,8 @@
 #include "udp_raw.h"
 #include "tcp_raw.h"
 
-// mruby
-#include <mruby.h>
-#include <mruby/compile.h>
-#include "mruby_ev/mrev.h"
+// ruby
+#include "ruby.h"
 
 /* lwip host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
@@ -133,20 +131,27 @@ main(int argc, char **argv) {
   printf("config file %s, on shell file %s, down shell file %s\n", config_file, onshell_file, downshell_file);
 
 
+
+
   /**
-   * mruby
+   * ruby
    */
-  mrb_state *mrb = mrb_open();
-  if (!mrb) { /* handle error */ }
-  mrb_mrev_gem_init(mrb);
-  mrb_load_string(mrb, "Mrev.hello_world");
-  mrb_load_string(mrb, "Mrev.blk { p 'blk hello!!!' }");
-  FILE *mruby_file = fopen("./src/dns.rb", "r");
-  if (mruby_file) {
-    mrb_load_file(mrb, mruby_file);
-    fclose(mruby_file);
+  /* construct the VM */
+  ruby_init();
+  ruby_init_loadpath();
+  VALUE result;
+  int s;
+  result = rb_eval_string_protect("puts 'Hello, world!'", &s);
+  if (s) {
+    printf("state is %d\n", s);
   }
-  mrb_close(mrb);
+
+  VALUE script = rb_str_new_cstr("./src/dns.rb");
+
+  rb_load(script, 0);
+
+  /* destruct the VM */
+  ruby_cleanup(0);
 
 
   /**

@@ -1,1 +1,1 @@
-Mrev.hello_world
+p 'hello world dns'
