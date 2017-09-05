@@ -21,7 +21,6 @@ include_directories(
     ${LIBEVDIR}
 
     ${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0
-    ${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0/x86_64-darwin16
 
     ${LIBYAML}/include
     ${LIBYAML}/win32
@@ -31,6 +30,13 @@ include_directories(
     src/netif
     src/dns
 )
+
+if (UNIX AND NOT APPLE)
+    include_directories(${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0/x86_64-linux)
+endif ()
+if (UNIX AND APPLE)
+    include_directories(${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0/x86_64-darwin16)
+endif ()
 
 
 set(MAIN_SOURCE_FILES
@@ -65,4 +71,9 @@ add_executable(ip2socks ${MAIN_SOURCE_FILES})
 target_link_libraries(ip2socks yaml)
 target_link_libraries(ip2socks resolv)
 
-target_link_libraries(ip2socks ${PROJECT_SOURCE_DIR}/build/ruby/lib/libruby.2.5.0.dylib)
+if (UNIX AND NOT APPLE)
+    target_link_libraries(ip2socks ${PROJECT_SOURCE_DIR}/build/ruby/lib/libruby.so)
+endif ()
+if (UNIX AND APPLE)
+    target_link_libraries(ip2socks ${PROJECT_SOURCE_DIR}/build/ruby/lib/libruby.2.5.0.dylib)
+endif ()

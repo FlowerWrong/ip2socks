@@ -26,6 +26,7 @@ vagrant ssh
 
 ```bash
 # build ruby
+mkdir -p build/ruby
 cd ruby
 autoconf
 ./configure --enable-shared --disable-install-doc --prefix=ip2socks/build/ruby
