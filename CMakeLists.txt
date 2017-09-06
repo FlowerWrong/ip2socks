@@ -8,40 +8,49 @@ set(LIBYAML libyaml)
 set(LWIPDIR lwip/src)
 set(LWIPARCH port)
 
-set(LIB_RUBY_DIR ruby)
+set(LIB_RUBY_DIR ${PROJECT_SOURCE_DIR}/build/ruby)
 
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
 include(cmake/libev.cmake)
 
 include_directories(
+    # lwip and patch
     ${LWIPDIR}/include
     ${LWIPARCH}/include
 
+    # libev
     ${LIBEVDIR}
 
-    ${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0
+    # ruby
+    ${LIB_RUBY_DIR}/include/ruby-2.4.0
 
+    # libyaml
     ${LIBYAML}/include
     ${LIBYAML}/win32
     ${LIBYAML}/src
 
-    src
+    # source code
     src/netif
     src/dns
+    src/ruby
+    src
 )
 
+# ruby config.h
 if (UNIX AND NOT APPLE)
-    include_directories(${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0/x86_64-linux)
+    include_directories(${LIB_RUBY_DIR}/include/ruby-2.4.0/x86_64-linux)
 endif ()
 if (UNIX AND APPLE)
-    include_directories(${PROJECT_SOURCE_DIR}/build/ruby/include/ruby-2.5.0/x86_64-darwin16)
+    include_directories(${LIB_RUBY_DIR}/include/ruby-2.4.0/x86_64-darwin16)
 endif ()
 
 
 set(MAIN_SOURCE_FILES
+    # lwip and patch
     ${LWIP_SOURCE_FILES}
 
+    # libev
     ${LIBEVDIR}/ev.c
 
     # patch files
@@ -49,6 +58,8 @@ set(MAIN_SOURCE_FILES
     src/netif/socket_util.c
 
     src/dns/dump_dns.c
+
+    src/ruby/rbev.c
 
     src/struct.cpp
     src/socks5.cpp
@@ -58,6 +69,7 @@ set(MAIN_SOURCE_FILES
     src/main.cpp
     )
 
+# linux
 if (UNIX AND NOT APPLE)
     set(MAIN_SOURCE_FILES
         ${MAIN_SOURCE_FILES}
@@ -72,8 +84,8 @@ target_link_libraries(ip2socks yaml)
 target_link_libraries(ip2socks resolv)
 
 if (UNIX AND NOT APPLE)
-    target_link_libraries(ip2socks ${PROJECT_SOURCE_DIR}/build/ruby/lib/libruby.so)
+    target_link_libraries(ip2socks ${LIB_RUBY_DIR}/lib/libruby.so)
 endif ()
 if (UNIX AND APPLE)
-    target_link_libraries(ip2socks ${PROJECT_SOURCE_DIR}/build/ruby/lib/libruby.2.5.0.dylib)
+    target_link_libraries(ip2socks ${LIB_RUBY_DIR}/lib/libruby.dylib)
 endif ()

@@ -31,6 +31,7 @@
 
 // ruby
 #include "ruby.h"
+#include "rbev.h"
 
 /* lwip host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
@@ -136,22 +137,15 @@ main(int argc, char **argv) {
   /**
    * ruby
    */
-  /* construct the VM */
   ruby_init();
   ruby_init_loadpath();
-  VALUE result;
-  int s;
-  result = rb_eval_string_protect("puts 'Hello, world!'", &s);
-  if (s) {
-    printf("state is %d\n", s);
-  }
+  Init_rbev();
 
   VALUE script = rb_str_new_cstr("./src/dns.rb");
-
   rb_load(script, 0);
-
-  /* destruct the VM */
-  ruby_cleanup(0);
+  /**
+   * ruby end
+   */
 
 
   /**
