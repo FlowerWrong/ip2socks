@@ -1,31 +1,56 @@
 require 'socket'
 
-host = '119.23.10.5'
-port = 80
+class DNSServer
+  def initialize(host, port)
+    @selectables = {}
 
-s = TCPSocket.open host, port
-s.puts "GET / HTTP/1.1\r\n"
-s.puts "\r\n"
-io = IO.try_convert(s)
-
-m = Rbev::IO.new()
-
-io_cb = proc {
-  if s.eof?
-    s.close
-    m.io_stop
-  else
-    p s.read(1460)
+    @server = TCPServer.new(host, port)
+    @selectables[@server] = Rbev::IO.new()
+    @selectables[@server].io_register(IO.try_convert(@server), :r, proc { accept })
   end
-}
 
-timer_cb = proc {
-  p "timer ------------------------------"
-  m.timer_stop
-}
+  def run
+    @selectables[@server].io_start
+  end
 
-m.timer_register(15.0, 0, timer_cb)
-m.timer_start
+  def accept
+    client = @server.accept_nonblock
+    _, port, host = client.peeraddr
+    p "#{host}:#{port} connected"
+    @selectables[client] = Rbev::IO.new()
+    @selectables[client].io_register(IO.try_convert(client), :r, proc { read(client) })
+    @selectables[client].io_start
 
-m.io_register(io, :r, io_cb)
-m.io_start
+    timer_cb = proc {
+      p "timer ------------------------------"
+      stop_client(client)
+    }
+
+    @selectables[client].timer_register(15.0, 0, timer_cb)
+    @selectables[client].timer_start
+  end
+
+  def stop_client(client)
+    @selectables[client].timer_stop
+    @selectables[client].io_stop
+    @selectables.delete client
+  end
+
+  def read(client)
+    @selectables[client].timer_again
+    if client.eof?
+      client.close
+      stop_client(client)
+    else
+      # FIXME
+      data = client.read_nonblock(1460)
+      p "recv data #{data}"
+      client.write_nonblock(data)
+    end
+  end
+end
+
+host = '0.0.0.0'
+port = 5359
+
+DNSServer.new(host, port).run
