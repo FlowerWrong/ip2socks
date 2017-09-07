@@ -141,7 +141,7 @@ main(int argc, char **argv) {
   ruby_init_loadpath();
   Init_rbev();
 
-  VALUE script = rb_str_new_cstr("./src/dns.rb");
+  VALUE script = rb_str_new_cstr("./src/ruby/dns.rb");
   rb_load(script, 0);
   /**
    * ruby end

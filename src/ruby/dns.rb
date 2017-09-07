@@ -8,9 +8,9 @@ s.puts "GET / HTTP/1.1\r\n"
 s.puts "\r\n"
 
 io = IO.try_convert(s)
-m = Rbev::Monitor.new(io)
+m = Rbev::Monitor.new()
 
-m.cb = proc {
+io_cb = proc {
   if s.eof?
     s.close
     m.io_stop
@@ -19,5 +19,5 @@ m.cb = proc {
   end
 }
 
-m.io_init
+m.io_register(io, :r, io_cb)
 m.io_start
