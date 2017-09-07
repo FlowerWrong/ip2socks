@@ -31,7 +31,7 @@
 
 // ruby
 #include "ruby.h"
-#include "rbev.h"
+#include "rb_ev_io.h"
 
 /* lwip host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
@@ -139,7 +139,7 @@ main(int argc, char **argv) {
    */
   ruby_init();
   ruby_init_loadpath();
-  Init_rbev();
+  Init_rb_ev_io();
 
   VALUE script = rb_str_new_cstr("./src/ruby/dns.rb");
   rb_load(script, 0);

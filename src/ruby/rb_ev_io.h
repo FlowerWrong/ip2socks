@@ -9,7 +9,7 @@
 extern "C" {
 #endif
 
-void Init_rbev(void);
+void Init_rb_ev_io(void);
 
 #ifdef __cplusplus
 }

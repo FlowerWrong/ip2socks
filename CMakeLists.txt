@@ -59,7 +59,7 @@ set(MAIN_SOURCE_FILES
 
     src/dns/dump_dns.c
 
-    src/ruby/rbev.c
+    src/ruby/rb_ev_io.c
 
     src/struct.cpp
     src/socks5.cpp
