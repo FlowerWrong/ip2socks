@@ -13,6 +13,7 @@ m = Rbev::Monitor.new(io)
 m.cb = proc {
   if s.eof?
     s.close
+    m.io_stop
   else
     p s.read(1460)
   end

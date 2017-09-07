@@ -91,6 +91,14 @@ static VALUE rb_ev_io_start(VALUE self) {
   return Qnil;
 }
 
+static VALUE rb_ev_io_stop(VALUE self) {
+  struct RB_EV_IO_MONITOR *monitor;
+  Data_Get_Struct(self, struct RB_EV_IO_MONITOR, monitor);
+  ev_io_stop(EV_DEFAULT, &monitor->ev_io);
+
+  return Qnil;
+}
+
 void Init_rbev(void) {
   VALUE rbev = rb_define_module("Rbev");
 
@@ -104,4 +112,5 @@ void Init_rbev(void) {
   rb_define_method(monitor, "io", rb_ev_io, 0);
   rb_define_method(monitor, "io_init", rb_ev_io_init, 0);
   rb_define_method(monitor, "io_start", rb_ev_io_start, 0);
+  rb_define_method(monitor, "io_stop", rb_ev_io_stop, 0);
 }
