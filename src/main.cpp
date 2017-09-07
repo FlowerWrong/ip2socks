@@ -138,7 +138,12 @@ main(int argc, char **argv) {
    * ruby
    */
   ruby_init();
-  ruby_init_loadpath();
+  // ruby_init_loadpath();
+
+  // must: or read_nonblock, write_nonblock is none
+  char* options[] = { "-v", "-eputs 'Hello, world!'" };
+	void* node = ruby_options(2, options);
+
   Init_rb_ev_io();
 
   VALUE script = rb_str_new_cstr("./src/ruby/dns.rb");

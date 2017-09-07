@@ -42,10 +42,11 @@ class DNSServer
       client.close
       stop_client(client)
     else
-      # FIXME
-      data = client.read_nonblock(1460)
-      p "recv data #{data}"
-      client.write_nonblock(data)
+      if client.respond_to?('read_nonblock')
+        data = client.read_nonblock(1460)
+        p "recv data #{data}"
+        client.write_nonblock(data)
+      end
     end
   end
 end
