@@ -8,11 +8,27 @@ GEM
       tzinfo (~> 1.1)
     awesome_print (1.8.0)
     concurrent-ruby (1.0.5)
+    dnsruby (1.60.2)
+    ffi (1.9.18)
     i18n (0.8.6)
     minitest (5.10.3)
+    net-proto (1.2.1)
+      ffi (>= 1.0.0)
+    network_interface (0.0.2)
+    packetfu (1.1.13)
+      pcaprub
+    packetgen (2.1.1)
+      net-proto (~> 1.2)
+      network_interface
+      pcaprub (~> 0.12.4)
+      rasn1 (~> 0.3, >= 0.3.1)
+    pcaprub (0.12.4)
+    rasn1 (0.3.1)
+      yard (~> 0.9)
     thread_safe (0.3.6)
     tzinfo (1.2.3)
       thread_safe (~> 0.1)
+    yard (0.9.9)
 
 PLATFORMS
   ruby
@@ -20,6 +36,9 @@ PLATFORMS
 DEPENDENCIES
   activesupport
   awesome_print
+  dnsruby
+  packetfu
+  packetgen
 
 BUNDLED WITH
-   1.14.6
+   1.15.4
