@@ -1,4 +1,11 @@
+bundler_gem_path = File.expand_path("../../../build/ruby/gems/vendor/bundle", __FILE__)
+
+Dir.glob(File.join(bundler_gem_path, "ruby/2.4.0/gems/**")).each do |gem_path|
+  $LOAD_PATH.push(File.join(gem_path, 'lib'))
+end
+
 require 'socket'
+require 'awesome_print'
 
 class DNSServer
   def initialize(host, port)
@@ -16,13 +23,13 @@ class DNSServer
   def accept
     client = @server.accept_nonblock
     _, port, host = client.peeraddr
-    p "#{host}:#{port} connected"
+    ap "#{host}:#{port} connected"
     @selectables[client] = Rbev::IO.new()
     @selectables[client].io_register(IO.try_convert(client), :r, proc { read(client) })
     @selectables[client].io_start
 
     timer_cb = proc {
-      p "timer ------------------------------"
+      ap "timer ------------------------------"
       stop_client(client)
     }
 
@@ -44,7 +51,7 @@ class DNSServer
     else
       if client.respond_to?('read_nonblock')
         data = client.read_nonblock(1460)
-        p "recv data #{data}"
+        ap "recv data #{data}"
         client.write_nonblock(data)
       end
     end

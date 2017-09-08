@@ -35,6 +35,8 @@ make install
 make clean
 cd ..
 
+bundle install --path build/ruby/gems/vendor/bundle
+
 cmake .
 make
 

@@ -53,3 +53,6 @@ librdns.so.*
 *.o
 *.out
 *.cbp
+
+# ruby
+.bundle/
