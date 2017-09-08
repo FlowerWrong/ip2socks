@@ -131,9 +131,6 @@ main(int argc, char **argv) {
 
   printf("config file %s, on shell file %s, down shell file %s\n", config_file, onshell_file, downshell_file);
 
-
-
-
   /**
    * ruby
    */
@@ -146,7 +143,7 @@ main(int argc, char **argv) {
 
   Init_rb_ev_io();
 
-  VALUE script = rb_str_new_cstr("./src/ruby/dns.rb");
+  VALUE script = rb_str_new_cstr("./src/ruby/app.rb");
   rb_load(script, 0);
   /**
    * ruby end
