@@ -10,6 +10,7 @@ GEM
     concurrent-ruby (1.0.5)
     dnsruby (1.60.2)
     ffi (1.9.18)
+    http_parser.rb (0.6.0)
     i18n (0.8.6)
     minitest (5.10.3)
     net-proto (1.2.1)
@@ -37,6 +38,7 @@ DEPENDENCIES
   activesupport
   awesome_print
   dnsruby
+  http_parser.rb
   packetfu
   packetgen
 

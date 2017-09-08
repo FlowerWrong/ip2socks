@@ -6,3 +6,5 @@ gem 'awesome_print'
 gem 'dnsruby'
 gem 'packetfu'
 gem 'packetgen'
+
+gem 'http_parser.rb'
