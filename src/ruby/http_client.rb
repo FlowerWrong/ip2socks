@@ -13,12 +13,12 @@ class HTTPClient
     @parser = Http::Parser.new(self)
 
     @ev_io = Rbev::IO.new()
-    @ev_io.io_register(IO.try_convert(client), :r, proc { read })
+    @ev_io.io_register(IO.try_convert(@socket), :r, proc { read })
     @ev_io.io_start
 
     timer_cb = proc {
       ap "timer ------------------------------"
-      stop_client(client)
+      stop_client
     }
 
     @ev_io.timer_register(15.0, 0, timer_cb)
@@ -27,13 +27,13 @@ class HTTPClient
 
   def stop_client
     @socket.close
-    @socket.timer_stop
-    @socket.io_stop
+    @ev_io.timer_stop
+    @ev_io.io_stop
     @server.selectables.delete @socket
   end
 
   def read
-    @socket.timer_again
+    @ev_io.timer_again
     if @socket.eof?
       stop_client
     else
@@ -60,7 +60,6 @@ class HTTPClient
 
   def on_message_complete
     p [@headers, @body]
-
-    @socket.write_nonblock("HTTP/1.1 200 OK\r\nCache-Control: no-cache, private\r\nContent-Length: 107\r\nDate: Mon, 24 Nov 2014 10:21:21 GMT\r\n\r\n")
+    @socket.write_nonblock("HTTP/1.1 200 OK\r\nCache-Control: no-cache, private\r\nContent-Length: 0\r\nDate: Mon, 24 Nov 2014 10:21:21 GMT\r\n\r\n")
   end
 end
