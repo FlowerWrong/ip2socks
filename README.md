@@ -29,15 +29,20 @@ vagrant ssh
 mkdir -p build/ruby
 cd ruby
 autoconf
+
+# OSX
 ./configure --with-openssl-dir="$(brew --prefix openssl)" --enable-shared --disable-install-doc --disable-silent-rules --prefix=ip2socks/build/ruby
+
+# Linux
+./configure --enable-shared --disable-install-doc --disable-silent-rules --prefix=ip2socks/build/ruby
+
 make
 make install
 make clean
 cd ..
 
 # use ruby 2.4.1
-bundle install --path build/ruby/gems/vendor/bundle
-rake http_parser
+rake gem_install
 
 cmake .
 make

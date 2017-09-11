@@ -11,6 +11,9 @@ desc "install gems"
 task :gem_install do
   install_dir = './build/ruby/gems/vendor/bundle/ruby/2.4.0'
   gem_bin = './build/ruby/bin/gem'
+  ruby_bin = './build/ruby/bin/ruby'
+  sh "#{ruby_bin} -v"
+  sh "#{gem_bin} -v"
   ['http_parser.rb', 'activesupport', 'awesome_print', 'dnsruby', 'packetfu', 'packetgen'].each do |gem|
     sh "#{gem_bin} install --install-dir #{install_dir} #{gem}"
   end
