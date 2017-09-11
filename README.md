@@ -29,14 +29,15 @@ vagrant ssh
 mkdir -p build/ruby
 cd ruby
 autoconf
-./configure --enable-shared --disable-install-doc --prefix=ip2socks/build/ruby
+./configure --with-openssl-dir="$(brew --prefix openssl)" --enable-shared --disable-install-doc --disable-silent-rules --prefix=ip2socks/build/ruby
 make
 make install
 make clean
 cd ..
 
-# use ruby 2.4.x
+# use ruby 2.4.1
 bundle install --path build/ruby/gems/vendor/bundle
+rake http_parser
 
 cmake .
 make
@@ -72,7 +73,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [lwip](https://github.com/FlowerWrong/lwip)
 * [libev](http://software.schmorp.de/pkg/libev.html)
 * [libyaml](https://github.com/yaml/libyaml)
-* ruby 2.4.x
+* ruby 2.4.1
 
 ## Know bugs
 

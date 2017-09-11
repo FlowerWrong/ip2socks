@@ -3,8 +3,8 @@ source 'https://rubygems.org'
 gem 'activesupport'
 gem 'awesome_print'
 
-gem 'dnsruby'
-gem 'packetfu'
-gem 'packetgen'
+# gem 'dnsruby'
+# gem 'packetfu'
+# gem 'packetgen'
 
-gem 'http_parser.rb'
+# gem 'http_parser.rb'
