@@ -14,7 +14,7 @@ task :gem_install do
   ruby_bin = './build/ruby/bin/ruby'
   sh "#{ruby_bin} -v"
   sh "#{gem_bin} -v"
-  ['http_parser.rb', 'activesupport', 'awesome_print', 'dnsruby', 'packetfu', 'packetgen'].each do |gem|
+  ['http_parser.rb', 'activesupport', 'awesome_print', 'dnsruby', 'packetfu', 'packetgen', 'ipaddress'].each do |gem|
     sh "#{gem_bin} install --install-dir #{install_dir} #{gem}"
   end
 end
