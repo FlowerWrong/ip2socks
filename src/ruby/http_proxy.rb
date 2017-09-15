@@ -13,7 +13,7 @@ class HTTPProxyServer
 
     @server = TCPServer.new(host, port)
     @ev_io = Rbev::IO.new()
-    @ev_io.io_register(IO.try_convert(@server), :r, proc { accept })
+    @ev_io.io_register(IO.try_convert(@server), :r, proc {accept})
   end
 
   def run

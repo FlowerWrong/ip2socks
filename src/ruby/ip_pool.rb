@@ -14,9 +14,9 @@ class IpPool
   def initialize(ip, subnet)
     subnet_ip = IPAddress subnet
     @min = Ip.ip2int(subnet_ip.address) + 1
-  	@max = @min + (~Ip.ip2int(subnet_ip.netmask) & 0xFFFFFFFF)
+    @max = @min + (~Ip.ip2int(subnet_ip.netmask) & 0xFFFFFFFF)
 
-  	@space = max - min
+    @space = max - min
 
     if @space > DnsIPPoolMaxSpace
       @space = DnsIPPoolMaxSpace

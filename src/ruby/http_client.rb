@@ -13,7 +13,7 @@ class HTTPClient
     @parser = Http::Parser.new(self)
 
     @ev_io = Rbev::IO.new()
-    @ev_io.io_register(IO.try_convert(@socket), :r, proc { read })
+    @ev_io.io_register(IO.try_convert(@socket), :r, proc {read})
     @ev_io.io_start
 
     timer_cb = proc {
