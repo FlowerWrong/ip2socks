@@ -41,7 +41,6 @@ make install
 make clean
 cd ..
 
-# use ruby 2.4.1
 rake gem_install
 
 cmake .
@@ -78,7 +77,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [lwip](https://github.com/FlowerWrong/lwip)
 * [libev](http://software.schmorp.de/pkg/libev.html)
 * [libyaml](https://github.com/yaml/libyaml)
-* ruby 2.4.1
+* ruby 2.4 +
 
 ## Know bugs
 
