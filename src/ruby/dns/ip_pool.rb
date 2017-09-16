@@ -1,6 +1,6 @@
 require_relative './ip.rb'
 require_relative './adler32.rb'
-require_relative './init.rb'
+require_relative '../init.rb'
 
 require 'ipaddress'
 
