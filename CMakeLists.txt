@@ -43,6 +43,7 @@ if (UNIX AND NOT APPLE)
 endif ()
 if (UNIX AND APPLE)
     include_directories(${LIB_RUBY_DIR}/include/ruby-2.4.0/x86_64-darwin16)
+    include_directories(${LIB_RUBY_DIR}/include/ruby-2.4.0/x86_64-darwin17) # FIXME
 endif ()
 
 
