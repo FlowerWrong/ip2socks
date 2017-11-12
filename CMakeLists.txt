@@ -6,7 +6,7 @@ set(CMAKE_CXX_STANDARD 11)
 set(LIBEVDIR libev)
 set(LIBYAML libyaml)
 set(LWIPDIR lwip/src)
-set(LWIPARCH port)
+set(LWIPARCH lwip-contrib/ports/unix/port)
 
 set(LIB_RUBY_DIR ${PROJECT_SOURCE_DIR}/build/ruby)
 

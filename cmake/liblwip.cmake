@@ -4,7 +4,7 @@ project(lwip C)
 set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=gnu99 -g -Wall -DLWIP_DEBUG")
 
 set(LWIPDIR lwip/src)
-set(LWIPARCH port)
+set(LWIPARCH lwip-contrib/ports/unix/port)
 
 
 include_directories(

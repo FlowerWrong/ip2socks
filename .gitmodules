@@ -13,3 +13,6 @@
 [submodule "ruby"]
 	path = ruby
 	url = git@github.com:ruby/ruby.git
+[submodule "lwip-contrib"]
+	path = lwip-contrib
+	url = git@github.com:FlowerWrong/lwip-contrib.git
