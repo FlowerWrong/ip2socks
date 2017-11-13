@@ -14,9 +14,6 @@
 ```bash
 git clone git@github.com:FlowerWrong/ip2socks.git --recursive
 
-git submodule init
-git submodule update
-
 # ubuntu vm
 vagrant up --provider virtualbox
 vagrant ssh
@@ -25,15 +22,15 @@ vagrant ssh
 #### Compile with C++ 11 and cmake
 
 ```bash
-# build ruby
+# build ruby start
 mkdir -p build/ruby
 cd ruby
 autoconf
 
-# OSX
+# OSX edit with your --prefix to absolute path
 ./configure --with-openssl-dir="$(brew --prefix openssl)" --enable-shared --disable-install-doc --disable-silent-rules --prefix=ip2socks/build/ruby
 
-# Linux
+# Linux edit with your --prefix to absolute path
 ./configure --enable-shared --disable-install-doc --disable-silent-rules --prefix=ip2socks/build/ruby
 
 make
@@ -43,9 +40,15 @@ cd ..
 
 rake gem_install
 
+# build ruby end
+
+
+# build ip2socks
 cmake .
 make
 
+
+## start ip2socks
 # OSX
 sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/darwin_setup_utun.sh --downshell=./scripts/darwin_down_utun.sh
 
@@ -108,14 +111,3 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [ ] Android support
 * [ ] iOS support
 * [ ] ipv6 support
-
-## How to remove submodule?
-
-```
-Run git rm --cached <submodule name>
-Delete the relevant lines from the .gitmodules file.
-Delete the relevant section from .git/config.
-Commit
-Delete the now untracked submodule files.
-Remove directory .git/modules/<submodule name>
-```
