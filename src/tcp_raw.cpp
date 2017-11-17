@@ -341,7 +341,6 @@ static void read_cb(struct ev_loop *loop, ev_io *watcher, int revents) {
 
   // EOF
   if (0 == nreads) {
-    printf("<---------------------------------- read EOF close socks fd %d.\n", watcher->fd);
     write_and_output(pcb, es);
     free_all(loop, watcher, es, pcb);
     return;
