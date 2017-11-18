@@ -56,3 +56,8 @@ librdns.so.*
 
 # ruby
 .bundle/
+
+
+# lua
+/lua/src/lua
+/lua/src/luac
