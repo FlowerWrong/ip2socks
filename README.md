@@ -22,27 +22,6 @@ vagrant ssh
 #### Compile with C++ 11 and cmake
 
 ```bash
-# build ruby start
-mkdir -p build/ruby
-cd ruby
-autoconf
-
-# OSX edit with your --prefix to absolute path
-./configure --with-openssl-dir="$(brew --prefix openssl)" --enable-shared --disable-install-doc --disable-silent-rules --prefix=ip2socks/build/ruby
-
-# Linux edit with your --prefix to absolute path
-./configure --enable-shared --disable-install-doc --disable-silent-rules --prefix=ip2socks/build/ruby
-
-make
-make install
-make clean
-cd ..
-
-rake gem_install
-
-# build ruby end
-
-
 # build ip2socks
 cmake .
 make
