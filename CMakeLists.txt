@@ -11,7 +11,7 @@ set(LWIPARCH lwip-contrib/ports/unix/port)
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
 include(cmake/libev.cmake)
-include(cmake/liblua.cmake)
+#include(cmake/liblua.cmake)
 
 include_directories(
     # lwip and patch
@@ -43,7 +43,7 @@ set(MAIN_SOURCE_FILES
     src/netif/tunif.c
     src/netif/socket_util.c
 
-    src/dns/dump_dns.c
+    src/dns/dns_parser.c
 
     src/struct.cpp
     src/socks5.cpp

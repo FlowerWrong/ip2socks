@@ -59,7 +59,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [lwip](https://github.com/FlowerWrong/lwip)
 * [libev](http://software.schmorp.de/pkg/libev.html)
 * [libyaml](https://github.com/yaml/libyaml)
-* ruby 2.4 +
+* lua 5.3.4
 
 ## Know bugs
 
@@ -90,3 +90,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [ ] Android support
 * [ ] iOS support
 * [ ] ipv6 support
+
+## References
+
+* [gnunet](https://gnunet.org/): an alternative network stack for building secure, decentralized and privacy-preserving distributed applications

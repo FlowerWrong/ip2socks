@@ -18,7 +18,7 @@
 #if defined(LWIP_UNIX_LINUX)
 #endif
 
-#include "dns/dump_dns.h"
+#include "dns/dns_parser.h"
 #include "udp_raw.h"
 #include "struct.h"
 #include "socks5.h"
