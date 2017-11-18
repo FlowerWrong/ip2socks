@@ -29,10 +29,6 @@
 #include "udp_raw.h"
 #include "tcp_raw.h"
 
-// ruby
-#include "ruby.h"
-#include "rb_ev_io.h"
-
 /* lwip host IP configuration */
 static ip4_addr_t ipaddr, netmask, gw;
 
@@ -130,24 +126,6 @@ main(int argc, char **argv) {
   }
 
   printf("config file %s, on shell file %s, down shell file %s\n", config_file, onshell_file, downshell_file);
-
-  /**
-   * ruby
-   */
-  ruby_init();
-  // ruby_init_loadpath();
-
-  // must: or read_nonblock, write_nonblock is none
-  char* options[] = { "-v", "-eputs 'Hello, world!'" };
-	void* node = ruby_options(2, options);
-
-  Init_rb_ev_io();
-
-  VALUE script = rb_str_new_cstr("./src/ruby/app.rb");
-  rb_load(script, 0);
-  /**
-   * ruby end
-   */
 
 
   /**
