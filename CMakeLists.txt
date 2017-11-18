@@ -11,6 +11,7 @@ set(LWIPARCH lwip-contrib/ports/unix/port)
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
 include(cmake/libev.cmake)
+include(cmake/liblua.cmake)
 
 include_directories(
     # lwip and patch
