@@ -4,7 +4,7 @@
 #include <errno.h>
 #include <string.h>
 
-const char *
+char *
 hostname_from_question(ns_msg msg) {
   static char hostname[256] = {0};
   ns_rr rr;
@@ -20,7 +20,7 @@ hostname_from_question(ns_msg msg) {
       return NULL;
     }
     result = ns_rr_name(rr);
-    result_len = strlen(result) + 1;
+    result_len = (int) strlen(result) + 1;
     if (result_len > sizeof(hostname)) {
       printf("hostname too long: %s\n", result);
     }
@@ -32,7 +32,7 @@ hostname_from_question(ns_msg msg) {
 }
 
 
-char *get_query_domain(const u_char *payload, size_t paylen, FILE *trace) {
+char *get_query_domain(const u_char *payload, int paylen, FILE *trace) {
   ns_msg msg;
 
   // Message too long
@@ -42,6 +42,5 @@ char *get_query_domain(const u_char *payload, size_t paylen, FILE *trace) {
     return NULL;
   }
 
-  const char *host = hostname_from_question(msg);
-  return host;
+  return hostname_from_question(msg);
 }

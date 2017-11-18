@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-char *get_query_domain(const u_char *payload, size_t paylen, FILE *trace);
+char *get_query_domain(const u_char *payload, int paylen, FILE *trace);
 
 #ifdef __cplusplus
 }
