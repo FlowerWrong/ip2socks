@@ -10,9 +10,6 @@
 [submodule "scripts/dnsmasq-china-list"]
 	path = scripts/dnsmasq-china-list
 	url = git@github.com:felixonmars/dnsmasq-china-list.git
-[submodule "ruby"]
-	path = ruby
-	url = git@github.com:ruby/ruby.git
 [submodule "lwip-contrib"]
 	path = lwip-contrib
 	url = git@github.com:FlowerWrong/lwip-contrib.git
