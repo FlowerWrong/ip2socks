@@ -8,12 +8,12 @@ GATEWAY_IP=$(netstat -nr | grep --color=never '^default' | grep -v 'utun' | sed 
 echo "origin gateway is '$GATEWAY_IP'"
 
 # direct route
-if [ -n "$DIRECT_IP_LIST" ]
-then
-    for i in $(cat $DIRECT_IP_LIST); do
-        route delete -net $i $GATEWAY_IP
-    done
-fi
+chnroutes=$(grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}" $DIRECT_IP_LIST |\
+    sed -e "s/^/delete -net /" -e "s/$/ $GATEWAY_IP/")
+
+./scripts/route -b <<EOF
+	$chnroutes
+EOF
 
 # route all flow to tun
 route delete -net 128.0.0.0 $TUN_IP -netmask 128.0.0.0
