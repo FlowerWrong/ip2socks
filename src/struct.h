@@ -21,6 +21,8 @@ struct Conf {
     char *gw;
     char *addr;
     char *netmask;
+    char *after_start_shell;
+    char *before_shutdown_shell;
     std::vector<std::vector<std::string>> domains;
 };
 

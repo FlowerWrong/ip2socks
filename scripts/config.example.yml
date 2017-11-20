@@ -10,3 +10,5 @@ custom_domian_server_file: ./scripts/block.conf;./scripts/custom_domain_server.c
 gw: 10.0.0.1 # gateway of lwip netif
 addr: 10.0.0.2 # ip of lwip netif
 netmask: 255.255.255.0 # netmask of lwip netif
+after_start_shell: './scripts/darwin_setup_utun.sh'
+before_shutdown_shell: './scripts/darwin_down_utun.sh'

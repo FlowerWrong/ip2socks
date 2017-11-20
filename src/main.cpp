@@ -19,57 +19,41 @@
 #include "util.h"
 
 #if defined(LWIP_UNIX_LINUX)
-
 #include "netif/tapif.h"
-
+#include "netif/etharp.h"
 #endif
 
 #include "netif/tunif.h"
-#include "netif/etharp.h"
 
 #include "udp_raw.h"
 #include "tcp_raw.h"
 
+#define BUFFER_SIZE 1514
+
 /* lwip host IP configuration */
+struct netif netif;
 static ip4_addr_t ipaddr, netmask, gw;
-
 static char *config_file;
-static char *onshell_file;
-static char *downshell_file;
-
-void on_shell();
-
-void down_shell();
 
 /* nonstatic debug cmd option, exported in lwipopts.h */
 unsigned char debug_flags;
 
 static struct option longopts[] = {
   /* turn on debugging output (if build with LWIP_DEBUG) */
-  {"debug",     no_argument,       NULL, 'd'},
+  {"debug",  no_argument,       NULL, 'd'},
   /* help */
-  {"help",      no_argument,       NULL, 'h'},
+  {"help",   no_argument,       NULL, 'h'},
   /* config file */
-  {"config",    required_argument, NULL, 'c'},
-  /* onshell script */
-  {"onshell",   required_argument, NULL, 'o'},
-  /* downshell script */
-  {"downshell", required_argument, NULL, 'n'},
+  {"config", required_argument, NULL, 'c'},
   /* new command line options go here! */
-  {NULL, 0,                        NULL, 0}
+  {NULL, 0,                     NULL, 0}
 };
 #define NUM_OPTS ((sizeof(longopts) / sizeof(struct option)) - 1)
 
-static void
-usage(void) {
-  unsigned char i;
-  printf("options:\n");
-  for (i = 0; i < NUM_OPTS; i++) {
-    printf("-%c --%s\n", longopts[i].val, longopts[i].name);
-  }
-}
 
-#define BUFFER_SIZE 1514
+void on_shell();
+
+void down_shell();
 
 void tuntap_read_cb(struct ev_loop *loop, struct ev_io *watcher, int revents);
 
@@ -79,7 +63,14 @@ void sigint_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
 
 void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
 
-struct netif netif;
+static void
+usage(void) {
+  unsigned char i;
+  printf("options:\n");
+  for (i = 0; i < NUM_OPTS; i++) {
+    printf("-%c --%s\n", longopts[i].val, longopts[i].name);
+  }
+}
 
 void parse_config(int argc, char **argv) {
   int ch;
@@ -95,7 +86,7 @@ void parse_config(int argc, char **argv) {
   /* use debug flags defined by debug.h */
   debug_flags = LWIP_DBG_OFF;
 
-  while ((ch = getopt_long(argc, argv, "dhc:o:n:", longopts, NULL)) != -1) {
+  while ((ch = getopt_long(argc, argv, "dhc:", longopts, NULL)) != -1) {
     switch (ch) {
       case 'd':
         debug_flags |= (LWIP_DBG_ON | LWIP_DBG_TRACE | LWIP_DBG_STATE | LWIP_DBG_FRESH | LWIP_DBG_HALT);
@@ -105,12 +96,6 @@ void parse_config(int argc, char **argv) {
             exit(0);
       case 'c':
         config_file = optarg;
-            break;
-      case 'o':
-        onshell_file = optarg;
-            break;
-      case 'n':
-        downshell_file = optarg;
             break;
       default:
         usage();
@@ -202,6 +187,10 @@ void parse_config(int argc, char **argv) {
                 datap = &conf->addr;
               } else if (strcmp(tk, "netmask") == 0) {
                 datap = &conf->netmask;
+              } else if (strcmp(tk, "after_start_shell") == 0) {
+                datap = &conf->after_start_shell;
+              } else if (strcmp(tk, "before_shutdown_shell") == 0) {
+                datap = &conf->before_shutdown_shell;
               } else {
                 printf("Unrecognised key: %s\n", tk);
               }
@@ -371,9 +360,9 @@ void down_shell() {
   /**
    * down shell scripts
    */
-  if (downshell_file != NULL) {
+  if (conf->before_shutdown_shell != NULL) {
     std::string sh("sh ");
-    sh.append(downshell_file);
+    sh.append(conf->before_shutdown_shell);
     sh.append(" ");
 
     if (strcmp(conf->ip_mode, "tun") == 0) {
@@ -392,9 +381,9 @@ void on_shell() {
   /**
    * setup shell scripts
    */
-  if (onshell_file != NULL) {
+  if (conf->after_start_shell != NULL) {
     std::string sh("sh ");
-    sh.append(onshell_file);
+    sh.append(conf->after_start_shell);
     sh.append(" ");
 
     if (strcmp(conf->ip_mode, "tun") == 0) {
