@@ -1,3 +1,4 @@
+print("\n")
 print(package.path)
 print(package.cpath)
 

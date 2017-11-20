@@ -14,6 +14,7 @@ chnroutes=$(grep -E "^([0-9]{1,3}\.){3}[0-9]{1,3}" $DIRECT_IP_LIST |\
 ./scripts/route -b <<EOF
 	$chnroutes
 EOF
+echo "batch del chnroutes"
 
 # route all flow to tun
 route delete -net 128.0.0.0 $TUN_IP -netmask 128.0.0.0
