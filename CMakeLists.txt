@@ -9,7 +9,6 @@ set(LIBEVDIR libev)
 set(LIBYAML libyaml)
 set(LWIPDIR lwip/src)
 set(LWIPARCH lwip-contrib/ports/unix/port)
-set(LUADIR lua)
 
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
@@ -27,9 +26,6 @@ include_directories(
     ${LIBYAML}/include
     ${LIBYAML}/win32
     ${LIBYAML}/src
-
-    # lua
-    ${LUADIR}/src
 
     # source code
     src/netif
@@ -71,10 +67,3 @@ add_executable(ip2socks ${MAIN_SOURCE_FILES})
 
 target_link_libraries(ip2socks yaml)
 target_link_libraries(ip2socks resolv)
-
-if (UNIX AND NOT APPLE)
-    target_link_libraries(ip2socks ${CMAKE_SOURCE_DIR}/lua/src/liblua.a)
-endif ()
-if (APPLE)
-    target_link_libraries(ip2socks ${CMAKE_SOURCE_DIR}/lua/src/liblua.a)
-endif ()

@@ -81,35 +81,6 @@ void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
 
 struct netif netif;
 
-
-extern "C"
-{
-#include "lua.h"
-#include "lauxlib.h"
-#include "lualib.h"
-};
-
-int
-lua_set_package_path(lua_State *L, const char *path) {
-  lua_getglobal(L, "package");
-  lua_pushstring(L, path);
-  lua_setfield(L, -2, "path");
-  lua_pop(L, 1);
-
-  return 0; /* should check for errors */
-}
-
-int
-lua_set_package_cpath(lua_State *L, const char *cpath) {
-  lua_getglobal(L, "package");
-  lua_pushstring(L, cpath);
-  lua_setfield(L, -2, "cpath");
-  lua_pop(L, 1);
-
-  return 0; /* should check for errors */
-}
-
-
 void parse_config(int argc, char **argv) {
   int ch;
   char ip_str[16] = {0}, nm_str[16] = {0}, gw_str[16] = {0};
@@ -325,24 +296,6 @@ void parse_config(int argc, char **argv) {
   }
 }
 
-void lua_thread_run() {
-  // 初始化解释器
-  lua_State *lua = luaL_newstate();
-  // 加载基础库，包括io,os,math等
-  luaL_openlibs(lua);
-
-  lua_set_package_path(lua, conf->lua_path);
-  lua_set_package_cpath(lua, conf->lua_cpath);
-
-  // 执行lua脚本
-  int lua_ret = luaL_dofile(lua, conf->init_lua);
-  if (lua_ret != 0) {
-    printf("Error: %s", lua_tostring(lua, -1));
-  }
-
-  lua_close(lua);
-}
-
 void ip2socks_thread_run() {
   /* lwip/src/core/init.c */
   lwip_init();
@@ -412,20 +365,11 @@ void ip2socks_thread_run() {
   ev_run(loop, 0);
 }
 
-void ip2socks_thread_run_ignore() {
-  // just for test
-}
-
 int
 main(int argc, char **argv) {
   parse_config(argc, argv);
-
-  std::thread lua_thread(lua_thread_run);
   std::thread ip2socks_thread(ip2socks_thread_run);
-
   ip2socks_thread.join();
-  lua_thread.join();
-
   return 0;
 }
 
