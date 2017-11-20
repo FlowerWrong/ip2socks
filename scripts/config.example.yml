@@ -10,6 +10,3 @@ custom_domian_server_file: ./scripts/block.conf;./scripts/custom_domain_server.c
 gw: 10.0.0.1 # gateway of lwip netif
 addr: 10.0.0.2 # ip of lwip netif
 netmask: 255.255.255.0 # netmask of lwip netif
-lua_path: '/Users/kingyang/.luarocks/share/lua/5.3/?.lua;/Users/kingyang/.luarocks/share/lua/5.3/?/init.lua;/usr/local/share/lua/5.3/?.lua;/usr/local/share/lua/5.3/?/init.lua;/usr/local/Cellar/lua@5.3/5.3.4/libexec/share/lua/5.3/?.lua;/usr/local/lib/lua/5.3/?.lua;/usr/local/lib/lua/5.3/?/init.lua;./?.lua;./?/init.lua'
-lua_cpath: '/Users/kingyang/.luarocks/lib/lua/5.3/?.so;/usr/local/lib/lua/5.3/?.so;/usr/local/lib/lua/5.3/loadall.so;./?.so'
-init_lua: "./scripts/init.lua"

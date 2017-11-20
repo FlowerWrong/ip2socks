@@ -22,19 +22,6 @@ vagrant ssh
 #### Compile with C++ 11 and cmake
 
 ```bash
-brew install lua@5.3
-brew info lua@5.3
-
-/usr/local/Cellar/lua@5.3/5.3.4/bin/luarocks-5.3 path
-/usr/local/Cellar/lua@5.3/5.3.4/bin/luarocks-5.3 install http --local CRYPTO_INCDIR=/usr/local/opt/openssl/include/ OPENSSL_DIR=/usr/local/opt/openssl/
-
-
-# build lua
-cd lua
-make clean
-make macosx # or make linux
-
-
 # build ip2socks
 cmake .
 make
@@ -72,7 +59,6 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [lwip](https://github.com/FlowerWrong/lwip)
 * [libev](http://software.schmorp.de/pkg/libev.html)
 * [libyaml](https://github.com/yaml/libyaml)
-* lua 5.3.4
 
 ## Know bugs
 
@@ -80,7 +66,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [x] OSX receive data too often, eg: `brew update`, `brew upgrade`
 * [x] if `ERR_QUIC_PROTOCOL_ERROR`, go to `chrome://flags/` disable quic
 * [x] ns_initparse `Message too long` bug
-* [ ] (libev) select: Invalid argument with setnoneblocking [socket-options-so-reuseaddr-and-so-reuseport](https://stackoverflow.com/questions/14388706/socket-options-so-reuseaddr-and-so-reuseport-how-do-they-differ-do-they-mean-t)
+* [ ] (libev) select: Invalid argument
 * [ ] tcp_raw_error is -14(ERR_RST): Connection reset.
 
 ## TODO
@@ -93,7 +79,6 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * [x] timeout
 * [ ] log
 * [ ] fake DNS server
-* [ ] http/https proxy server
 * [x] OSX route batch insert
 * [x] lwip `keep-alive` support
 * [x] lwip `SO_REUSEADDR` support

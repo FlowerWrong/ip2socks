@@ -53,11 +53,3 @@ librdns.so.*
 *.o
 *.out
 *.cbp
-
-# ruby
-.bundle/
-
-
-# lua
-/lua/src/lua
-/lua/src/luac

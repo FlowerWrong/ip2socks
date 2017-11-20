@@ -202,12 +202,6 @@ void parse_config(int argc, char **argv) {
                 datap = &conf->addr;
               } else if (strcmp(tk, "netmask") == 0) {
                 datap = &conf->netmask;
-              } else if (strcmp(tk, "lua_path") == 0) {
-                datap = &conf->lua_path;
-              } else if (strcmp(tk, "lua_cpath") == 0) {
-                datap = &conf->lua_cpath;
-              } else if (strcmp(tk, "init_lua") == 0) {
-                datap = &conf->init_lua;
               } else {
                 printf("Unrecognised key: %s\n", tk);
               }
