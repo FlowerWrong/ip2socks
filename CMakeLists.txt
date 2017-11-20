@@ -40,6 +40,9 @@ set(MAIN_SOURCE_FILES
     # libev
     ${LIBEVDIR}/ev.c
 
+    # libyaml
+    ${YAML_SOURCE_FILES}
+
     # patch files
     src/netif/tunif.c
     src/netif/socket_util.c
@@ -64,6 +67,4 @@ if (UNIX AND NOT APPLE)
 endif ()
 
 add_executable(ip2socks ${MAIN_SOURCE_FILES})
-
-target_link_libraries(ip2socks yaml)
 target_link_libraries(ip2socks resolv)

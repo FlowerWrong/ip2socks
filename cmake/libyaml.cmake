@@ -8,22 +8,8 @@ set(YAML_VERSION_STRING "${YAML_VERSION_MAJOR}.${YAML_VERSION_MINOR}.${YAML_VERS
 
 set(LIBYAMLDIR libyaml)
 
-file(GLOB SRC ${LIBYAMLDIR}/src/*.c)
+add_definitions(-DHAVE_CONFIG_H)
 
-# configure_file(cmake/yaml_config.h.cmake ${LIBYAMLDIR}/include/config.h)
+file(GLOB YAML_SOURCE_FILES ${LIBYAMLDIR}/src/*.c ${LIBYAMLDIR}/src/yaml_private.h)
 
-set(config_h ${LIBYAMLDIR}/include/config.h)
-configure_file(
-    cmake/yaml_config.h.cmake
-    ${config_h}
-)
-
-include_directories(${LIBYAMLDIR}/include ${LIBYAMLDIR}/win32)
-
-add_library(yaml_static STATIC ${SRC})
-set_target_properties(yaml_static PROPERTIES COMPILE_FLAGS "-DYAML_DECLARE_STATIC -DHAVE_CONFIG_H")
-
-if (UNIX AND NOT APPLE)
-    add_library(yaml SHARED ${SRC})
-    set_target_properties(yaml PROPERTIES COMPILE_FLAGS "-DYAML_DECLARE_EXPORT -DHAVE_CONFIG_H")
-endif ()
+configure_file(cmake/config.h.cmake ${LIBYAMLDIR}/include/config.h)

@@ -58,4 +58,4 @@ check_function_exists(signalfd HAVE_SIGNALFD)
 check_library_exists(rt pthread_create "" HAVE_LIBRT)
 
 
-configure_file(cmake/libev_config.h.cmake ${LIBEVDIR}/config.h)
+configure_file(cmake/config.h.cmake ${LIBEVDIR}/config.h)

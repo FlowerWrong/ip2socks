@@ -126,3 +126,11 @@
 
 /* Version number of package */
 #define VERSION "@version_major@.@version_minor@"
+
+
+
+/* libyaml config.h */
+#define YAML_VERSION_MAJOR @YAML_VERSION_MAJOR@
+#define YAML_VERSION_MINOR @YAML_VERSION_MINOR@
+#define YAML_VERSION_PATCH @YAML_VERSION_PATCH@
+#define YAML_VERSION_STRING "@YAML_VERSION_STRING@"

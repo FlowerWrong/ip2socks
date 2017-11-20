@@ -16,8 +16,6 @@ ip2socks.dSYM/
 
 # main app
 ip2socks
-libyaml.*
-!libyaml.cmake
 
 # cmake
 CMakeCache.txt
@@ -49,7 +47,6 @@ config.yml
 *.a
 *.so
 *.dylib
-librdns.so.*
 *.o
 *.out
 *.cbp
