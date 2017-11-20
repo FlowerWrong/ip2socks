@@ -1,4 +1,6 @@
 cmake_minimum_required(VERSION 2.8)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/cmake_module")
+
 project(ip2socks)
 
 set(CMAKE_CXX_STANDARD 11)
@@ -7,11 +9,11 @@ set(LIBEVDIR libev)
 set(LIBYAML libyaml)
 set(LWIPDIR lwip/src)
 set(LWIPARCH lwip-contrib/ports/unix/port)
+set(LUADIR lua)
 
 include(cmake/liblwip.cmake)
 include(cmake/libyaml.cmake)
 include(cmake/libev.cmake)
-#include(cmake/liblua.cmake)
 
 include_directories(
     # lwip and patch
@@ -25,6 +27,9 @@ include_directories(
     ${LIBYAML}/include
     ${LIBYAML}/win32
     ${LIBYAML}/src
+
+    # lua
+    ${LUADIR}/src
 
     # source code
     src/netif
@@ -66,3 +71,10 @@ add_executable(ip2socks ${MAIN_SOURCE_FILES})
 
 target_link_libraries(ip2socks yaml)
 target_link_libraries(ip2socks resolv)
+
+if (UNIX AND NOT APPLE)
+    target_link_libraries(ip2socks ${CMAKE_SOURCE_DIR}/lua/src/liblua.a)
+endif ()
+if (APPLE)
+    target_link_libraries(ip2socks ${CMAKE_SOURCE_DIR}/lua/src/liblua.a)
+endif ()

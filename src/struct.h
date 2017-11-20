@@ -21,6 +21,9 @@ struct Conf {
     char *gw;
     char *addr;
     char *netmask;
+    char *lua_path;
+    char *lua_cpath;
+    char *init_lua;
     std::vector<std::vector<std::string>> domains;
 };
 

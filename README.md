@@ -22,6 +22,19 @@ vagrant ssh
 #### Compile with C++ 11 and cmake
 
 ```bash
+brew install lua@5.3
+brew info lua@5.3
+
+/usr/local/Cellar/lua@5.3/5.3.4/bin/luarocks-5.3 path
+/usr/local/Cellar/lua@5.3/5.3.4/bin/luarocks-5.3 install http --local CRYPTO_INCDIR=/usr/local/opt/openssl/include/ OPENSSL_DIR=/usr/local/opt/openssl/
+
+
+# build lua
+cd lua
+make clean
+make macosx # or make linux
+
+
 # build ip2socks
 cmake .
 make

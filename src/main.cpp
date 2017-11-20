@@ -4,6 +4,7 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
+#include <thread>
 
 #include "ev.h"
 #include "yaml.h"
@@ -80,8 +81,36 @@ void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents);
 
 struct netif netif;
 
+
+extern "C"
+{
+#include "lua.h"
+#include "lauxlib.h"
+#include "lualib.h"
+};
+
 int
-main(int argc, char **argv) {
+lua_set_package_path(lua_State *L, const char *path) {
+  lua_getglobal(L, "package");
+  lua_pushstring(L, path);
+  lua_setfield(L, -2, "path");
+  lua_pop(L, 1);
+
+  return 0; /* should check for errors */
+}
+
+int
+lua_set_package_cpath(lua_State *L, const char *cpath) {
+  lua_getglobal(L, "package");
+  lua_pushstring(L, cpath);
+  lua_setfield(L, -2, "cpath");
+  lua_pop(L, 1);
+
+  return 0; /* should check for errors */
+}
+
+
+void parse_config(int argc, char **argv) {
   int ch;
   char ip_str[16] = {0}, nm_str[16] = {0}, gw_str[16] = {0};
 
@@ -214,6 +243,12 @@ main(int argc, char **argv) {
                 datap = &conf->addr;
               } else if (strcmp(tk, "netmask") == 0) {
                 datap = &conf->netmask;
+              } else if (strcmp(tk, "lua_path") == 0) {
+                datap = &conf->lua_path;
+              } else if (strcmp(tk, "lua_cpath") == 0) {
+                datap = &conf->lua_cpath;
+              } else if (strcmp(tk, "init_lua") == 0) {
+                datap = &conf->init_lua;
               } else {
                 printf("Unrecognised key: %s\n", tk);
               }
@@ -300,8 +335,27 @@ main(int argc, char **argv) {
     }
     conf->domains = domains;
   }
+}
 
+void lua_thread_run() {
+  // 初始化解释器
+  lua_State *lua = luaL_newstate();
+  // 加载基础库，包括io,os,math等
+  luaL_openlibs(lua);
 
+  lua_set_package_path(lua, conf->lua_path);
+  lua_set_package_cpath(lua, conf->lua_cpath);
+
+  // 执行lua脚本
+  int lua_ret = luaL_dofile(lua, conf->init_lua);
+  if (lua_ret != 0) {
+    printf("Error: %s", lua_tostring(lua, -1));
+  }
+
+  lua_close(lua);
+}
+
+void ip2socks_thread_run() {
   /* lwip/src/core/init.c */
   lwip_init();
 
@@ -326,7 +380,7 @@ main(int argc, char **argv) {
   struct ev_io *tuntap_io = (struct ev_io *) mem_malloc(sizeof(struct ev_io));
   if (tuntap_io == NULL) {
     printf("tuntap_io: out of memory for tuntap_io\n");
-    return -1;
+    return;
   }
   struct ev_loop *loop = ev_default_loop(0);
 
@@ -367,7 +421,24 @@ main(int argc, char **argv) {
 
   std::cout << "Ip2socks started!" << std::endl;
 
-  return ev_run(loop, 0);
+  ev_run(loop, 0);
+}
+
+void ip2socks_thread_run_ignore() {
+  // just for test
+}
+
+int
+main(int argc, char **argv) {
+  parse_config(argc, argv);
+
+  std::thread lua_thread(lua_thread_run);
+  std::thread ip2socks_thread(ip2socks_thread_run);
+
+  ip2socks_thread.join();
+  lua_thread.join();
+
+  return 0;
 }
 
 void down_shell() {
@@ -416,12 +487,14 @@ void sigterm_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
   printf("SIGTERM handler called in process!!!\n");
   down_shell();
   ev_break(loop, EVBREAK_ALL);
+  exit(0); // kill all threads
 }
 
 void sigint_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
   printf("SIGINT handler called in process!!!\n");
   down_shell();
   ev_break(loop, EVBREAK_ALL);
+  exit(0); // kill all threads
 }
 
 void sigusr2_cb(struct ev_loop *loop, ev_signal *watcher, int revents) {
