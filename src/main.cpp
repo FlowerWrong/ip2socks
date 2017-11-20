@@ -154,9 +154,6 @@ void parse_config(int argc, char **argv) {
     exit(0);
   }
 
-  printf("config file %s, on shell file %s, down shell file %s\n", config_file, onshell_file, downshell_file);
-
-
   /**
    * yaml config parser start
    */
@@ -187,37 +184,28 @@ void parse_config(int argc, char **argv) {
     switch (token.type) {
       /* Stream start/end */
       case YAML_STREAM_START_TOKEN:
-        puts("STREAM START");
-            break;
+        break;
       case YAML_STREAM_END_TOKEN:
-        puts("STREAM END");
-            break;
+        break;
             /* Token types (read before actual token) */
       case YAML_KEY_TOKEN:
-        printf("(Key token)   ");
-            state = 0;
+        state = 0;
             break;
       case YAML_VALUE_TOKEN:
-        printf("(Value token) ");
-            state = 1;
+        state = 1;
             break;
             /* Block delimeters */
       case YAML_BLOCK_SEQUENCE_START_TOKEN:
-        puts("<b>Start Block (Sequence)</b>");
-            break;
+        break;
       case YAML_BLOCK_ENTRY_TOKEN:
-        puts("<b>Start Block (Entry)</b>");
-            break;
+        break;
       case YAML_BLOCK_END_TOKEN:
-        puts("<b>End block</b>");
-            break;
+        break;
             /* Data */
       case YAML_BLOCK_MAPPING_START_TOKEN:
-        puts("[Block mapping]");
-            break;
+        break;
       case YAML_SCALAR_TOKEN:
-        printf("scalar %s \n", token.data.scalar.value);
-            tk = (char *) token.data.scalar.value;
+        tk = (char *) token.data.scalar.value;
             if (state == 0) {
               if (strcmp(tk, "ip_mode") == 0) {
                 datap = &conf->ip_mode;
@@ -258,7 +246,7 @@ void parse_config(int argc, char **argv) {
             break;
             /* Others */
       default:
-        printf("Got token of type %d\n", token.type);
+        break;
     }
     if (token.type != YAML_STREAM_END_TOKEN)
       yaml_token_delete(&token);
@@ -303,7 +291,7 @@ void parse_config(int argc, char **argv) {
   strncpy(ip_str, ip4addr_ntoa(&ipaddr), sizeof(ip_str));
   strncpy(nm_str, ip4addr_ntoa(&netmask), sizeof(nm_str));
   strncpy(gw_str, ip4addr_ntoa(&gw), sizeof(gw_str));
-  printf("Host at %s mask %s gateway %s\n", ip_str, nm_str, gw_str);
+  printf("Lwip netstack host %s mask %s gateway %s\n", ip_str, nm_str, gw_str);
 
 
   if (conf->custom_domian_server_file != NULL) {

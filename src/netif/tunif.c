@@ -226,7 +226,6 @@ low_level_init(struct netif *netif) {
   /* Do whatever else is needed to initialize interface. */
 
   tunif->fd = tun_create(tun_name);
-  printf("tunif_init: fd %d %s\n", tunif->fd, tun_name);
   if (tunif->fd < 1) {
     perror("tunif_init failed\n");
     exit(1);

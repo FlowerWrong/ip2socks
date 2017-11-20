@@ -1,7 +1,3 @@
-print("\n")
-print(package.path)
-print(package.cpath)
-
 local port = 5201
 
 local http_server = require "http.server"
