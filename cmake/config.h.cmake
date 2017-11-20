@@ -1,3 +1,6 @@
+/* libev config.h start */
+
+
 /* config.h : Generated from config.h.cmake.in in CMakeLists.txt by cmake.  */
 
 /* Define to 1 if you have the `clock_gettime' function. */
@@ -128,9 +131,14 @@
 #define VERSION "@version_major@.@version_minor@"
 
 
+/* libev config.h end */
 
-/* libyaml config.h */
+
+
+
+/* libyaml config.h start */
 #define YAML_VERSION_MAJOR @YAML_VERSION_MAJOR@
 #define YAML_VERSION_MINOR @YAML_VERSION_MINOR@
 #define YAML_VERSION_PATCH @YAML_VERSION_PATCH@
 #define YAML_VERSION_STRING "@YAML_VERSION_STRING@"
+/* libyaml config.h end */
