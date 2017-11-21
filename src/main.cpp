@@ -4,7 +4,6 @@
 #include <stdlib.h>
 #include <iostream>
 #include <fstream>
-#include <thread>
 
 #include "ev.h"
 #include "yaml.h"
@@ -279,7 +278,9 @@ void parse_config(int argc, char **argv) {
   }
 }
 
-void ip2socks_thread_run() {
+int
+main(int argc, char **argv) {
+  parse_config(argc, argv);
   /* lwip/src/core/init.c */
   lwip_init();
 
@@ -304,7 +305,7 @@ void ip2socks_thread_run() {
   struct ev_io *tuntap_io = (struct ev_io *) mem_malloc(sizeof(struct ev_io));
   if (tuntap_io == NULL) {
     printf("tuntap_io: out of memory for tuntap_io\n");
-    return;
+    return -1;
   }
   struct ev_loop *loop = ev_default_loop(0);
 
@@ -344,16 +345,7 @@ void ip2socks_thread_run() {
   on_shell();
 
   std::cout << "Ip2socks started!" << std::endl;
-
-  ev_run(loop, 0);
-}
-
-int
-main(int argc, char **argv) {
-  parse_config(argc, argv);
-  std::thread ip2socks_thread(ip2socks_thread_run);
-  ip2socks_thread.join();
-  return 0;
+  return ev_run(loop, 0);
 }
 
 void down_shell() {
