@@ -29,10 +29,10 @@ make
 
 ## start ip2socks
 # OSX
-sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/darwin_setup_utun.sh --downshell=./scripts/darwin_down_utun.sh
+sudo ./ip2socks --config=./scripts/config.example.yml
 
 # linux
-sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_setup_tuntap.sh --downshell=./scripts/linux_down_tuntap.sh
+sudo ./ip2socks --config=./scripts/config.example.yml
 ```
 
 #### ip mode
@@ -45,7 +45,7 @@ sudo ./ip2socks --config=./scripts/config.example.yml --onshell=./scripts/linux_
 * tcp: just dns with port you set `local_dns_port` redirect to tcp, other flow will be try to send to remote via socks 5 udp tunnel
 * udp: just dns with port you set `local_dns_port` redirect to udp, other flow will be send to remote via socks 5 udp tunnel
 
-#### There are 5 way to setup DNS query with tcp
+#### There are 5 ways to setup DNS query to remote
 
 * `use-vc` in `/etc/resolv.conf`: Sets RES_USEVC in _res.options.  This option forces the use of TCP for DNS resolutions.
 * pdnsd
