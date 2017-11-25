@@ -29,10 +29,10 @@ make
 
 ## start ip2socks
 # OSX
-sudo ./ip2socks --config=./scripts/config.example.yml
+sudo ./ip2socks --config=./scripts/config.darwin.example.yml
 
 # linux
-sudo ./ip2socks --config=./scripts/config.example.yml
+sudo ./ip2socks --config=./scripts/config.linux.example.yml
 ```
 
 #### ip mode
