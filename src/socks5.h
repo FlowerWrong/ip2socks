@@ -1,7 +1,3 @@
-//
-// Created by yy on 17-7-7.
-//
-
 #ifndef LWIP_SOCKS5_H
 #define LWIP_SOCKS5_H
 

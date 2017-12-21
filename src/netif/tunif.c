@@ -21,6 +21,7 @@
 #endif
 
 #if defined(LWIP_UNIX_LINUX)
+
 #include <sys/ioctl.h>
 #include <linux/if.h>
 #include <linux/if_tun.h>
@@ -170,109 +171,109 @@ int utun_create(char *dev, u_int32_t unit) {
 #endif /* LWIP_UNIX_MACH */
 
 int tun_create(char *dev) {
-  int fd = -1;
+    int fd = -1;
 #if defined(LWIP_UNIX_LINUX)
-  struct ifreq ifr;
+    struct ifreq ifr;
 
-  if ((fd = open(DEVTUN, O_RDWR)) < 0) {
-    printf("open %s failed\n", DEVTUN);
-    return fd;
-  }
+    if ((fd = open(DEVTUN, O_RDWR)) < 0) {
+        printf("open %s failed\n", DEVTUN);
+        return fd;
+    }
 
-  memset(&ifr, 0, sizeof(ifr));
-  ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
+    memset(&ifr, 0, sizeof(ifr));
+    ifr.ifr_flags = IFF_TUN | IFF_NO_PI;
 
-  if (ioctl(fd, TUNSETIFF, (void *) &ifr) < 0) {
-    printf("failed to open tun device\n");
-    close(fd);
-    return -1;
-  }
-  strcpy(dev, ifr.ifr_name);
+    if (ioctl(fd, TUNSETIFF, (void *) &ifr) < 0) {
+        printf("failed to open tun device\n");
+        close(fd);
+        return -1;
+    }
+    strcpy(dev, ifr.ifr_name);
 
-  printf("Open tun device: %s for reading...\n", ifr.ifr_name);
+    printf("Open tun device: %s for reading...\n", ifr.ifr_name);
 #endif
 
 #if defined(LWIP_UNIX_MACH)
-  for (u_int32_t unit = 0; unit < 256; ++unit) {
-    fd = utun_create(dev, unit);
-    if (fd >= 0)
-      break;
-  }
+    for (u_int32_t unit = 0; unit < 256; ++unit) {
+      fd = utun_create(dev, unit);
+      if (fd >= 0)
+        break;
+    }
 #endif /* LWIP_UNIX_MACH */
 
-  return fd;
+    return fd;
 }
 
 static void
 low_level_init(struct netif *netif) {
-  struct tunif *tunif;
-  int ret = 0;
-  char buf[1024];
+    struct tunif *tunif;
+    int ret = 0;
+    char buf[1024];
 
 #if defined(LWIP_UNIX_MACH)
-  char tun_name[16];
+    char tun_name[16];
 #endif /* LWIP_UNIX_MACH */
 
 #if defined(LWIP_UNIX_LINUX)
-  char tun_name[IFNAMSIZ];
+    char tun_name[IFNAMSIZ];
 #endif
-  tun_name[0] = '\0';
+    tun_name[0] = '\0';
 
 
-  tunif = (struct tunif *) netif->state;
+    tunif = (struct tunif *) netif->state;
 
-  /* Obtain MAC address from network interface. */
+    /* Obtain MAC address from network interface. */
 
-  /* Do whatever else is needed to initialize interface. */
+    /* Do whatever else is needed to initialize interface. */
 
-  tunif->fd = tun_create(tun_name);
-  if (tunif->fd < 1) {
-    perror("tunif_init failed\n");
-    exit(1);
-  }
+    tunif->fd = tun_create(tun_name);
+    if (tunif->fd < 1) {
+        perror("tunif_init failed\n");
+        exit(1);
+    }
 
-  printf("tun name is %s\n", tun_name);
+    printf("tun name is %s\n", tun_name);
 
 #if defined(LWIP_UNIX_MACH)
-  // ifconfig $intf $local_tun_ip $remote_tun_ip mtu $mtu netmask 255.255.255.0 up
-  snprintf(buf, 1024, IFCONFIG_BIN
-    IFCONFIG_ARGS,
-           tun_name,
-           ip4_addr1(netif_ip4_gw(netif)),
-           ip4_addr2(netif_ip4_gw(netif)),
-           ip4_addr3(netif_ip4_gw(netif)),
-           ip4_addr4(netif_ip4_gw(netif)),
-           ip4_addr1(netif_ip4_gw(netif)),
-           ip4_addr2(netif_ip4_gw(netif)),
-           ip4_addr3(netif_ip4_gw(netif)),
-           ip4_addr4(netif_ip4_gw(netif)),
-           BUFFER_SIZE,
-           ip4_addr1(netif_ip4_netmask(netif)),
-           ip4_addr2(netif_ip4_netmask(netif)),
-           ip4_addr3(netif_ip4_netmask(netif)),
-           ip4_addr4(netif_ip4_netmask(netif))
-  );
-  ret = system(buf);
+    // ifconfig $intf $local_tun_ip $remote_tun_ip mtu $mtu netmask 255.255.255.0 up
+    snprintf(buf, 1024, IFCONFIG_BIN
+      IFCONFIG_ARGS,
+             tun_name,
+             ip4_addr1(netif_ip4_gw(netif)),
+             ip4_addr2(netif_ip4_gw(netif)),
+             ip4_addr3(netif_ip4_gw(netif)),
+             ip4_addr4(netif_ip4_gw(netif)),
+             ip4_addr1(netif_ip4_gw(netif)),
+             ip4_addr2(netif_ip4_gw(netif)),
+             ip4_addr3(netif_ip4_gw(netif)),
+             ip4_addr4(netif_ip4_gw(netif)),
+             BUFFER_SIZE,
+             ip4_addr1(netif_ip4_netmask(netif)),
+             ip4_addr2(netif_ip4_netmask(netif)),
+             ip4_addr3(netif_ip4_netmask(netif)),
+             ip4_addr4(netif_ip4_netmask(netif))
+    );
+    ret = system(buf);
 #endif /* LWIP_UNIX_MACH */
 #if defined(LWIP_UNIX_LINUX)
-  snprintf(buf, 1024, IP_BIN IP_ADDR_ARGS,
-           ip4_addr1(netif_ip4_gw(netif)),
-           ip4_addr2(netif_ip4_gw(netif)),
-           ip4_addr3(netif_ip4_gw(netif)),
-           ip4_addr4(netif_ip4_gw(netif)),
-           tun_name);
-  ret = system(buf);
-  snprintf(buf, 1024, IP_BIN IP_UP_ARGS,
-           tun_name);
-  ret = system(buf);
+    snprintf(buf, 1024, IP_BIN IP_ADDR_ARGS,
+             ip4_addr1(netif_ip4_gw(netif)),
+             ip4_addr2(netif_ip4_gw(netif)),
+             ip4_addr3(netif_ip4_gw(netif)),
+             ip4_addr4(netif_ip4_gw(netif)),
+             tun_name);
+    ret = system(buf);
+    snprintf(buf, 1024, IP_BIN IP_UP_ARGS,
+             tun_name);
+    ret = system(buf);
 #endif
 
-  if (ret < 0) {
-    perror("ifconfig failed");
-    exit(1);
-  }
+    if (ret < 0) {
+        perror("ifconfig failed");
+        exit(1);
+    }
 
-  setnonblocking(tunif->fd);
+    setnonblocking(tunif->fd);
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -287,24 +288,24 @@ low_level_init(struct netif *netif) {
 
 static err_t
 low_level_output(struct tunif *tunif, struct pbuf *p) {
-  char buf[BUFFER_SIZE];
-  int ret;
+    char buf[BUFFER_SIZE];
+    int ret;
 
-  /* initiate transfer(); */
+    /* initiate transfer(); */
 
-  pbuf_copy_partial(p, buf, p->tot_len, 0);
+    pbuf_copy_partial(p, buf, p->tot_len, 0);
 
-  /* signal that packet should be sent(); */
+    /* signal that packet should be sent(); */
 #if defined(LWIP_UNIX_MACH)
-  ret = tun_write(tunif->fd, buf, p->tot_len);
+    ret = tun_write(tunif->fd, buf, p->tot_len);
 #endif
 #if defined(LWIP_UNIX_LINUX)
-  ret = write(tunif->fd, buf, p->tot_len);
+    ret = write(tunif->fd, buf, p->tot_len);
 #endif
-  if (ret == -1) {
-    perror("tunif: write failed\n");
-  }
-  return ERR_OK;
+    if (ret == -1) {
+        perror("tunif: write failed\n");
+    }
+    return ERR_OK;
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -317,35 +318,35 @@ low_level_output(struct tunif *tunif, struct pbuf *p) {
 /*-----------------------------------------------------------------------------------*/
 static struct pbuf *
 low_level_input(struct tunif *tunif) {
-  struct pbuf *p;
-  ssize_t len;
-  char buf[BUFFER_SIZE];
+    struct pbuf *p;
+    ssize_t len;
+    char buf[BUFFER_SIZE];
 
-  /* Obtain the size of the packet and put it into the "len"
-     variable. */
+    /* Obtain the size of the packet and put it into the "len"
+       variable. */
 #if defined(LWIP_UNIX_MACH)
-  len = tun_read(tunif->fd, buf, sizeof(buf));
+    len = tun_read(tunif->fd, buf, sizeof(buf));
 #endif /* LWIP_UNIX_MACH */
 #if defined(LWIP_UNIX_LINUX)
-  len = read(tunif->fd, buf, sizeof(buf));
+    len = read(tunif->fd, buf, sizeof(buf));
 #endif
-  if ((len <= 0) || (len > 0xffff)) {
-    return NULL;
-  }
+    if ((len <= 0) || (len > 0xffff)) {
+        return NULL;
+    }
 
-  /* We allocate a pbuf chain of pbufs from the pool. */
-  p = pbuf_alloc(PBUF_LINK, (u16_t) len, PBUF_POOL);
+    /* We allocate a pbuf chain of pbufs from the pool. */
+    p = pbuf_alloc(PBUF_LINK, (u16_t) len, PBUF_POOL);
 
-  if (p != NULL) {
-    pbuf_take(p, buf, (u16_t) len);
-    /* acknowledge that packet has been read(); */
-  } else {
-    /* drop packet(); */
-    printf("pbuf_alloc failed\n");
-    return NULL;
-  }
+    if (p != NULL) {
+        pbuf_take(p, buf, (u16_t) len);
+        /* acknowledge that packet has been read(); */
+    } else {
+        /* drop packet(); */
+        printf("pbuf_alloc failed\n");
+        return NULL;
+    }
 
-  return p;
+    return p;
 }
 
 /*-----------------------------------------------------------------------------------*/
@@ -361,12 +362,12 @@ low_level_input(struct tunif *tunif) {
 static err_t
 tunif_output(struct netif *netif, struct pbuf *p,
              const ip4_addr_t *ipaddr) {
-  struct tunif *tunif;
-  LWIP_UNUSED_ARG(ipaddr);
+    struct tunif *tunif;
+    LWIP_UNUSED_ARG(ipaddr);
 
-  tunif = (struct tunif *) netif->state;
+    tunif = (struct tunif *) netif->state;
 
-  return low_level_output(tunif, p);
+    return low_level_output(tunif, p);
 
 }
 /*-----------------------------------------------------------------------------------*/
@@ -382,23 +383,23 @@ tunif_output(struct netif *netif, struct pbuf *p,
 /*-----------------------------------------------------------------------------------*/
 void
 tunif_input(struct netif *netif) {
-  struct tunif *tunif;
-  struct pbuf *p;
+    struct tunif *tunif;
+    struct pbuf *p;
 
-  tunif = (struct tunif *) netif->state;
+    tunif = (struct tunif *) netif->state;
 
-  p = low_level_input(tunif);
+    p = low_level_input(tunif);
 
-  if (p == NULL) {
-    LWIP_DEBUGF(TUNIF_DEBUG, ("tunif_input: low_level_input returned NULL\n"));
-    return;
-  }
+    if (p == NULL) {
+        LWIP_DEBUGF(TUNIF_DEBUG, ("tunif_input: low_level_input returned NULL\n"));
+        return;
+    }
 
-  err_t err = netif->input(p, netif);
-  if (err != ERR_OK) {
-    printf("============================> tapif_input: netif input error %s\n", lwip_strerr(err));
-    pbuf_free(p);
-  }
+    err_t err = netif->input(p, netif);
+    if (err != ERR_OK) {
+        printf("============================> tapif_input: netif input error %s\n", lwip_strerr(err));
+        pbuf_free(p);
+    }
 }
 /*-----------------------------------------------------------------------------------*/
 /*
@@ -412,19 +413,19 @@ tunif_input(struct netif *netif) {
 /*-----------------------------------------------------------------------------------*/
 err_t
 tunif_init(struct netif *netif) {
-  struct tunif *tunif;
+    struct tunif *tunif;
 
-  tunif = (struct tunif *) mem_malloc(sizeof(struct tunif));
-  if (!tunif) {
-    return ERR_MEM;
-  }
-  netif->state = tunif;
-  netif->name[0] = IFNAME0;
-  netif->name[1] = IFNAME1;
-  netif->output = tunif_output;
+    tunif = (struct tunif *) mem_malloc(sizeof(struct tunif));
+    if (!tunif) {
+        return ERR_MEM;
+    }
+    netif->state = tunif;
+    netif->name[0] = IFNAME0;
+    netif->name[1] = IFNAME1;
+    netif->output = tunif_output;
 
-  low_level_init(netif);
-  return ERR_OK;
+    low_level_init(netif);
+    return ERR_OK;
 }
 /*-----------------------------------------------------------------------------------*/
 

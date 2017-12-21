@@ -1,7 +1,3 @@
-//
-// Created by king Yang on 2017/7/30.
-//
-
 #ifndef EV_STRUCT_H_H
 #define EV_STRUCT_H_H
 

@@ -7,10 +7,6 @@ end_of_line = lf
 insert_final_newline = true
 charset = utf-8
 
-[*.{c,cpp,h,hpp,rb}]
-indent_style = space
-indent_size = 2
-
 # Tab indentation (no size specified)
 [Makefile]
 indent_style = tab
