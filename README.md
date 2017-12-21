@@ -1,13 +1,9 @@
 # ip2socks
 
-## Support now
+## Support operating system
 
-#### OSX
-
-#### Linux
-
-* ubuntu tested
-* archlinux tested
+* [x] OSX
+* [x] Linux
 
 ## Get start
 
@@ -37,7 +33,7 @@ sudo ./ip2socks --config=./scripts/config.linux.example.yml
 
 #### ip mode
 
-* tun or utun
+* tun
 * tap
 
 #### dns mode
@@ -57,6 +53,7 @@ sudo ./ip2socks --config=./scripts/config.linux.example.yml
 
 * C++ 11
 * [lwip](https://github.com/FlowerWrong/lwip)
+* [lwip-contrib](https://github.com/FlowerWrong/lwip-contrib)
 * [libev](http://software.schmorp.de/pkg/libev.html)
 * [libyaml](https://github.com/yaml/libyaml)
 
@@ -78,7 +75,6 @@ sudo ./ip2socks --config=./scripts/config.linux.example.yml
 * [x] `domain`, `domain_keyword`, `domain_suffix` (ip_cidr, geoip) rule support
 * [x] timeout
 * [ ] log
-* [ ] fake DNS server
 * [x] OSX route batch insert
 * [x] lwip `keep-alive` support
 * [x] lwip `SO_REUSEADDR` support
@@ -88,7 +84,3 @@ sudo ./ip2socks --config=./scripts/config.linux.example.yml
 * [ ] Android support
 * [ ] iOS support
 * [ ] ipv6 support
-
-## References
-
-* [gnunet](https://gnunet.org/): an alternative network stack for building secure, decentralized and privacy-preserving distributed applications
