@@ -9,6 +9,7 @@
 
 #include "socks5.h"
 #include "struct.h"
+#include "var.h"
 #include "tcp_raw.h"
 
 #include "lwip/opt.h"
@@ -19,10 +20,6 @@
 
 static struct tcp_pcb *tcp_raw_pcb;
 static ev_timer timeout_watcher;
-
-#define container_of(ptr, type, member) ({      \
-  const typeof( ((type *)0)->member ) *__mptr = (ptr);  \
-  (type *)( (char *)__mptr - offsetof(type,member) );})
 
 
 static ev_tstamp timeout = 60.;

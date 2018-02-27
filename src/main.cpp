@@ -16,6 +16,7 @@
 
 #include "struct.h"
 #include "util.h"
+#include "var.h"
 
 #if defined(LWIP_UNIX_LINUX)
 
@@ -28,8 +29,6 @@
 
 #include "udp_raw.h"
 #include "tcp_raw.h"
-
-#define BUFFER_SIZE 1514
 
 /* lwip host IP configuration */
 struct netif netif;
@@ -49,7 +48,6 @@ static struct option longopts[] = {
         /* new command line options go here! */
         {NULL, 0,                     NULL, 0}
 };
-#define NUM_OPTS ((sizeof(longopts) / sizeof(struct option)) - 1)
 
 
 void on_shell();
@@ -252,7 +250,7 @@ void parse_config(int argc, char **argv) {
     if (conf->custom_domian_server_file != NULL) {
         std::string line;
         std::string file_sp(";");
-        std::string sp("/");
+        std::string sp(SLASH);
 
         std::vector<std::vector<std::string>> domains;
 

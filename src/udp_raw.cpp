@@ -6,27 +6,22 @@
 #include <vector>
 
 #include "lwip/ip6.h"
+#include "lwip/udp.h"
+
 #include "ev.h"
 #include "socket_util.h"
 
 #include <netinet/in.h>
 #include <arpa/inet.h>
 
-
-#include "lwip/udp.h"
-
-#if defined(LWIP_UNIX_LINUX)
-#endif
-
 #include "dns/dns_parser.h"
 #include "udp_raw.h"
 #include "struct.h"
 #include "socks5.h"
 #include "util.h"
+#include "var.h"
 
 #if LWIP_UDP
-
-#define UDP_BUFFER_SIZE 1460
 
 typedef struct udp_timer_ctx {
     ev_timer watcher;
@@ -54,9 +49,6 @@ typedef struct {
 static ev_tstamp timeout = 60.;
 
 static struct udp_pcb *udp_raw_pcb;
-#define container_of(ptr, type, member) ({      \
-  const typeof( ((type *)0)->member ) *__mptr = (ptr);  \
-  (type *)( (char *)__mptr - offsetof(type,member) );})
 
 
 static void free_dns_query(ev_io *watcher, struct udp_raw_state *es) {
@@ -233,7 +225,7 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
 
         bool matched = false;
         bool blocked = false;
-        std::string dns_server("114.114.114.114");
+        std::string dns_server("114.114.114.114"); // default dns server
         match_dns_rule(conf->domains, cppdomain, &matched, &dns_server, &blocked);
 
         if (blocked) {
@@ -358,8 +350,8 @@ udp_raw_recv(void *arg, struct udp_pcb *upcb, struct pbuf *p,
     if (strcmp("udp", conf->dns_mode) == 0 && upcb->remote_fake_port == atoi(conf->local_dns_port)) {
         bool matched = false;
         bool blocked = false;
-        std::string dns_server("114.114.114.114");
-        std::string sp("/");
+        std::string dns_server("114.114.114.114"); // default dns server
+        std::string sp(SLASH);
 
         domain = get_query_domain(reinterpret_cast<const u_char *>(buf), p->tot_len, stderr);
         if (domain == NULL) {
