@@ -3,6 +3,7 @@
 
 #include <vector>
 #include <iostream>
+#include <stdlib.h>
 
 struct Conf {
     char *ip_mode;
@@ -19,7 +20,7 @@ struct Conf {
     char *netmask;
     char *after_start_shell;
     char *before_shutdown_shell;
-    std::vector<std::vector<std::string>> domains;
+    std::vector<std::vector<std::string> > domains;
 };
 
 struct tuntapif {
