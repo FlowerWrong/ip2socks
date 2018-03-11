@@ -483,5 +483,7 @@
 
 #define PPP_SUPPORT 0
 
+/* to fix https://github.com/FlowerWrong/ip2socks/issues/4 */
+#define LWIP_DONT_PROVIDE_BYTEORDER_FUNCTIONS 0
 
 #endif /* LWIP_LWIPOPTS_H */

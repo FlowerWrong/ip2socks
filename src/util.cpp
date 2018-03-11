@@ -19,7 +19,7 @@ bool end_with(const std::string &str, const std::string &suffix) {
     return str.size() >= suffix.size() && str.compare(str.size() - suffix.size(), suffix.size(), suffix) == 0;
 }
 
-void match_dns_rule(std::vector<std::vector<std::string>> &domains, std::string &domain, bool *matched,
+void match_dns_rule(std::vector<std::vector<std::string> > &domains, std::string &domain, bool *matched,
                     std::string *dns_server, bool *blocked) {
     for (int i = 0; i < domains.size(); ++i) {
         std::string rule(domains.at(i).at(0).c_str());
