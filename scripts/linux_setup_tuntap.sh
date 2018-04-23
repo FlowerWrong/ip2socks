@@ -27,4 +27,4 @@ ip route add 223.5.5.5 via $GATEWAY_IP
 
 # remote server
 # TODO just edit it with yours
-ip route add 47.90.32.252 via $GATEWAY_IP
+ip route add 216.155.152.203 via $GATEWAY_IP

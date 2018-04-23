@@ -25,4 +25,4 @@ ip route del 223.5.5.5 via $GATEWAY_IP
 
 # remote server
 # TODO just edit it with yours
-ip route del 47.90.32.252 via $GATEWAY_IP
+ip route del 216.155.152.203 via $GATEWAY_IP
