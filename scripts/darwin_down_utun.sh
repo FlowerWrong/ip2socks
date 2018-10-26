@@ -26,4 +26,4 @@ route delete -host 223.5.5.5 $GATEWAY_IP
 
 # remote server
 # TODO just edit it with yours
-route delete -host 47.75.85.91 $GATEWAY_IP
+route delete -host 47.52.95.27 $GATEWAY_IP
