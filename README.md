@@ -8,7 +8,7 @@
 ## Get start
 
 ```bash
-git clone git@github.com:FlowerWrong/ip2socks.git --recursive
+git clone https://github.com/FlowerWrong/ip2socks.git --recursive
 
 # ubuntu vm
 vagrant up --provider virtualbox
