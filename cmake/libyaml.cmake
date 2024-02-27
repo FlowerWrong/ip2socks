@@ -13,3 +13,4 @@ add_definitions(-DHAVE_CONFIG_H)
 file(GLOB YAML_SOURCE_FILES ${LIBYAMLDIR}/src/*.c ${LIBYAMLDIR}/src/yaml_private.h)
 
 configure_file(cmake/config.h.cmake ${LIBYAMLDIR}/include/config.h)
+include_directories(${CMAKE_BINARY_DIR}/${LIBYAMLDIR}/include)
